@@ -1258,10 +1258,12 @@ function exportToExcel(orders, users, inventory) {
   wsPay['!cols'] = [{wch:12},{wch:24},{wch:24},{wch:26},{wch:24},{wch:24},{wch:24},{wch:20},{wch:10},{wch:14},{wch:13},{wch:22},{wch:26},{wch:20},{wch:28}];
   XLSX.utils.book_append_sheet(wb, wsPay, 'Payments');
 
-  /* ── SHEET 5: Payment Proofs (with clickable links) ── */
+  /* ── SHEET 5: Payment Proofs ── */
   const proofOrders = orders.filter(o=>o.screenshot&&o.screenshot.startsWith('data:'));
+  const today = new Date().toISOString().slice(0,10);
+  const proofFileName = `Lifeline_Payment_Proofs_${today}.html`;
 
-  /* Build HTML page with all proof images + clickable links */
+  /* Build self-contained HTML file with all images embedded as base64 */
   const proofHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lifeline Water — Payment Proofs</title>
 <style>body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;background:#f4faf4}
 h1{color:#1a3d1a;margin-bottom:6px}p.sub{color:#5a7a5a;margin-bottom:28px}
@@ -1285,46 +1287,51 @@ ${proofOrders.length===0?'<div class="empty">No payment screenshots uploaded yet
   <div><b>Items:</b> ${o.items.map(it=>it.name+' × '+it.qty).join(', ')}</div>
   <div style="margin-top:8px"><b>File:</b> ${o.screenshotName||'screenshot'}</div>
   <img src="${o.screenshot}" alt="Payment proof for ${o.id}"/>
-  <br/><a class="btn" href="${o.screenshot}" download="${o.id}_payment_proof${o.screenshotName?'.'+o.screenshotName.split('.').pop():''}">⬇ Download Proof</a>
+  <br/><a class="btn" href="${o.screenshot}" download="${o.id}_proof">⬇ Download This Proof</a>
 </div>`).join('')}
 </body></html>`;
 
-  /* Save HTML as a Blob and create an object URL — write URL into the sheet */
-  const blob = new Blob([proofHtml], {type:'text/html'});
-  const blobUrl = URL.createObjectURL(blob);
+  /* Download the HTML file properly (not a blob URL) */
+  const htmlBlob = new Blob([proofHtml], {type:'text/html;charset=utf-8'});
+  const htmlLink = document.createElement('a');
+  htmlLink.href = URL.createObjectURL(htmlBlob);
+  htmlLink.download = proofFileName;
+  document.body.appendChild(htmlLink);
+  htmlLink.click();
+  document.body.removeChild(htmlLink);
+  setTimeout(()=>URL.revokeObjectURL(htmlLink.href), 10000);
 
-  /* Proof summary rows */
+  /* Proof summary rows — plain text filename, no blob URL */
   const proofRows = proofOrders.length ? proofOrders.map(o=>({
-    'Order ID':           o.id,
-    'Order Date & Time':  fmt(o.orderDateTime||o.date),
-    'Customer Name':      fmt(o.cname),
-    'Amount (₹)':         o.total||0,
-    'Status':             statusLabel[o.status]||o.status,
-    'Screenshot File':    fmt(o.screenshotName),
-    'VIEW ALL PROOFS →':  blobUrl,
-  })) : [{Note:'No payment screenshots uploaded yet','VIEW ALL PROOFS →':blobUrl}];
+    'Order ID':          o.id,
+    'Order Date & Time': fmt(o.orderDateTime||o.date),
+    'Customer Name':     fmt(o.cname),
+    'Amount (₹)':        o.total||0,
+    'Status':            statusLabel[o.status]||o.status,
+    'Screenshot File':   fmt(o.screenshotName),
+    'How to View Proof': `Open "${proofFileName}" downloaded alongside this Excel file`,
+  })) : [{
+    'Note': 'No payment screenshots uploaded yet',
+    'How to View Proof': `If proofs exist in future, open "${proofFileName}" downloaded with this Excel`,
+  }];
 
+  /* Add instruction rows at bottom */
   const wsProof = XLSX.utils.json_to_sheet(proofRows);
+  const instrStart = proofRows.length + 3;
+  XLSX.utils.sheet_add_aoa(wsProof, [
+    ['─────────────────────────────────────────────'],
+    ['HOW TO VIEW PAYMENT PROOF IMAGES:'],
+    ['1. Both files download together: the Excel and "' + proofFileName + '"'],
+    ['2. Open "' + proofFileName + '" in any web browser (Chrome, Firefox, Edge, Safari)'],
+    ['3. All proof images load instantly — fully self-contained, no internet needed'],
+    ['4. Each image has a "Download This Proof" button to save individually'],
+    ['─────────────────────────────────────────────'],
+  ], {origin:{r:instrStart, c:0}});
 
-  /* Make the blob URL column a hyperlink in every row */
-  const linkCol = 'G';
-  proofRows.forEach((_,i)=>{
-    const cellRef = linkCol+(i+2);
-    if (wsProof[cellRef]) {
-      wsProof[cellRef].l = {Target: blobUrl, Tooltip:'Click to open all payment proofs in browser'};
-      wsProof[cellRef].v = '🔗 Click here to view all payment proof images';
-      wsProof[cellRef].s = {font:{color:{rgb:'0563C1'},underline:true}};
-    }
-  });
-
-  wsProof['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:12},{wch:28},{wch:26},{wch:44}];
+  wsProof['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:12},{wch:28},{wch:26},{wch:56}];
   XLSX.utils.book_append_sheet(wb, wsProof, 'Payment Proofs');
 
-  /* Also auto-open the proofs HTML page */
-  if (proofOrders.length > 0) window.open(blobUrl, '_blank');
-
-  /* ── Download ── */
-  const today = new Date().toISOString().slice(0,10);
+  /* ── Download Excel ── */
   XLSX.writeFile(wb, `Lifeline_Water_Report_${today}.xlsx`);
 }
 
