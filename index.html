@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Lifeline Packaged Drinking Water</title>
-<meta name="description" content="Pure, safe, ISI-certified packaged drinking water delivered to your door across Delhi NCR."/>
+<meta name="description" content="Pure, safe, ISI-certified packaged drinking water delivered to your door across Jharkhand."/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -108,7 +108,8 @@ const STATUS_ORDER = ['pending','screenshot','verified','confirmed','out_for_del
 const STATUS_LABELS = {
   pending:'Order Placed', screenshot:'Payment Sent',
   verified:'Payment Verified', confirmed:'Order Confirmed',
-  out_for_delivery:'Out for Delivery', delivered:'Delivered'
+  out_for_delivery:'Out for Delivery', delivered:'Delivered',
+  cancelled:'Cancelled'
 };
 
 /* ---------- PERSISTENT STORE (localStorage) ---------- */
@@ -127,7 +128,7 @@ function generateInvoice(order) {
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
   doc.text('PACKAGED DRINKING WATER', M, 24);
   doc.setFontSize(7.5);
-  doc.text('FSSAI Lic: 12315004000753  |  lifeline.water@gmail.com  |  +91 98765 43210  |  Delhi NCR', M, 31);
+  doc.text('FSSAI Lic: 12315004000753  |  lifeline.water@gmail.com  |  +91 98765 43210  |  Jharkhand', M, 31);
   doc.setFont('helvetica','bold'); doc.setFontSize(16);
   doc.text('TAX INVOICE', W-M, 15, {align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
@@ -213,11 +214,11 @@ function App() {
   const [page, setPage]     = useState('home');
   const [user, setUser]     = useState(() => load('ll_user', null));
   const [users, setUsers]   = useState(() => load('ll_users', [
-    {id:'C-001',name:'Raj Sharma',   email:'raj@example.com',  password:'raj123',  phone:'9876543210',address:'House 12, Sector 5, Delhi'},
+    {id:'C-001',name:'Raj Sharma',   email:'raj@example.com',  password:'raj123',  phone:'9876543210',address:'House 12, Sector 5, Ranchi, Jharkhand'},
     {id:'C-002',name:'Priya Mehta',  email:'priya@example.com',password:'priya123',phone:'9812345678',address:'Flat 7B, Green Colony, Noida'},
   ]));
   const [orders, setOrders] = useState(() => load('ll_orders', [
-    {id:'ORD-001',cid:'C-001',cname:'Raj Sharma',phone:'9876543210',items:[{pid:'p3',name:'20L Refillable Jar',qty:2,price:50,deposit:100}],sub:100,dep:200,total:300,status:'delivered',screenshot:'uploaded',deliveryTime:'Delivered 16 Mar',address:'House 12, Sector 5, Delhi',date:'2024-03-16'},
+    {id:'ORD-001',cid:'C-001',cname:'Raj Sharma',phone:'9876543210',items:[{pid:'p3',name:'20L Refillable Jar',qty:2,price:50,deposit:100}],sub:100,dep:200,total:300,status:'delivered',screenshot:'uploaded',deliveryTime:'Delivered 16 Mar',address:'House 12, Sector 5, Ranchi, Jharkhand',date:'2024-03-16'},
     {id:'ORD-002',cid:'C-002',cname:'Priya Mehta',phone:'9812345678',items:[{pid:'p1',name:'1L Bottle Carton',qty:3,price:80,deposit:0}],sub:240,dep:0,total:240,status:'screenshot',screenshot:'uploaded',deliveryTime:'',address:'Flat 7B, Green Colony, Noida',date:'2024-03-17'},
   ]));
   const [toast, setToast]   = useState('');
@@ -319,10 +320,10 @@ function Home({setPage, user, logout, showToast}) {
         <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundImage:'radial-gradient(ellipse at 25% 55%,rgba(77,184,77,0.18) 0%,transparent 55%),radial-gradient(ellipse at 80% 15%,rgba(168,224,99,0.12) 0%,transparent 50%)'}}/>
         <div style={{position:'relative',maxWidth:680,margin:'0 auto'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(77,184,77,0.18)',color:'#a8e063',padding:'6px 18px',borderRadius:20,fontSize:11,letterSpacing:2,textTransform:'uppercase',marginBottom:24,border:'1px solid rgba(168,224,99,0.25)'}}>
-            ISI & FSSAI Certified · Delhi NCR
+            ISI & FSSAI Certified · Jharkhand
           </div>
           <h1 style={{fontFamily:'Playfair Display',fontSize:56,fontWeight:800,color:'#fff',lineHeight:1.1,marginBottom:20}}>Pure water.<br/>Delivered to your door.</h1>
-          <p style={{color:'#b0d4b0',fontSize:17,lineHeight:1.8,marginBottom:40,maxWidth:520,margin:'0 auto 40px'}}>Lifeline Packaged Drinking Water — trusted by 500+ homes, offices, and events across Delhi NCR for over 6 years.</p>
+          <p style={{color:'#b0d4b0',fontSize:17,lineHeight:1.8,marginBottom:40,maxWidth:520,margin:'0 auto 40px'}}>Lifeline Packaged Drinking Water — trusted by 500+ homes, offices, and events across Jharkhand for over 15 years.</p>
           <div className="hero-btns" style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}}>
             <button style={{background:'var(--lime)',color:'var(--g800)',fontWeight:700,padding:'16px 40px',fontSize:17,borderRadius:10,border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(168,224,99,0.35)',transition:'all .2s'}} onClick={()=>setPage('auth')} onMouseEnter={e=>e.target.style.transform='translateY(-2px)'} onMouseLeave={e=>e.target.style.transform='none'}>Start Ordering — Free →</button>
             <button style={{background:'rgba(255,255,255,0.1)',color:'#fff',padding:'16px 32px',fontSize:15,borderRadius:10,border:'1px solid rgba(255,255,255,0.2)',cursor:'pointer',transition:'all .2s',backdropFilter:'blur(4px)'}} onClick={()=>document.getElementById('products').scrollIntoView({behavior:'smooth'})}>View Products ↓</button>
@@ -400,7 +401,7 @@ function Home({setPage, user, logout, showToast}) {
             </div>
             <div>
               <div className="stats-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24}}>
-                {[['500+','Active Clients'],['50,000+','Bottles Delivered'],['4.9 ★','Avg. Rating'],['6 Years','In Business']].map(([v,l])=>(
+                {[['500+','Active Clients'],['50,000+','Bottles Delivered'],['4.9 ★','Avg. Rating'],['15+ Years','In Business']].map(([v,l])=>(
                   <div key={l} style={{background:'rgba(255,255,255,0.06)',borderRadius:12,padding:'20px 16px',textAlign:'center',border:'1px solid rgba(255,255,255,0.08)'}}>
                     <div style={{fontFamily:'Playfair Display',fontSize:28,fontWeight:800,color:'var(--lime)'}}>{v}</div>
                     <div style={{fontSize:12,color:'#8ab88a',marginTop:5}}>{l}</div>
@@ -419,7 +420,7 @@ function Home({setPage, user, logout, showToast}) {
 
       {/* CONTACT / FOOTER */}
       <div style={{background:'#e8f5e8',padding:'20px 32px',textAlign:'center'}}>
-        <p style={{color:'var(--muted)',fontSize:13}}>© 2024 Lifeline Packaged Drinking Water · FSSAI Lic. 12315004000753 · <b>+91 98765 43210</b> · lifeline.water@gmail.com · Delhi NCR</p>
+        <p style={{color:'var(--muted)',fontSize:13}}>© 2024 Lifeline Packaged Drinking Water · FSSAI Lic. 12315004000753 · <b>+91 98765 43210</b> · lifeline.water@gmail.com · Jharkhand</p>
         <p style={{color:'var(--muted)',fontSize:12,marginTop:4}}>
           <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>setPage('auth')}>Admin Login</span>
         </p>
@@ -557,6 +558,12 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
     reader.readAsDataURL(file);
   };
 
+  const cancelOrder = (o) => {
+    if (!window.confirm('Cancel order ' + o.id + '?\n\nA full refund of ₹' + o.total + ' will be processed. This cannot be undone.')) return;
+    updateOrder(o.id, {status:'cancelled', cancelledBy:'customer', cancelNote:'Cancelled by customer — full refund of ₹' + o.total + ' will be processed within 3–5 business days.'});
+    showToast('Order ' + o.id + ' cancelled. Refund will be processed.');
+  };
+
   return (
     <div style={{minHeight:'100vh',background:'#f4faf4'}}>
       <Navbar setPage={setPage} user={user} logout={logout}/>
@@ -566,7 +573,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
         <div className="dash-stats" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:24}}>
           {[
             ['Total Orders', orders.length, 'var(--g600)'],
-            ['Active', orders.filter(o=>!['delivered','cancelled'].includes(o.status)).length, '#d97706'],
+            ['Active', orders.filter(o=>o.status!=='delivered').length, '#d97706'],
             ['Delivered', orders.filter(o=>o.status==='delivered').length, '#14532d'],
           ].map(([l,v,c])=>(
             <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid var(--border)',padding:'16px',textAlign:'center',boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
@@ -711,6 +718,8 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
               </div>
             ) : orders.slice().reverse().map(o=>{
               const si = STATUS_ORDER.indexOf(o.status);
+              const isCancelled = o.status === 'cancelled';
+              const canCancel = !isCancelled && !['out_for_delivery','delivered'].includes(o.status);
               return (
                 <div key={o.id} className="card" style={{marginBottom:18}}>
                   {/* Header */}
@@ -718,32 +727,35 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                     <div>
                       <span style={{fontWeight:800,fontSize:16,color:'var(--g800)'}}>{o.id}</span>
                       <span style={{fontSize:12,color:'var(--muted)',marginLeft:8}}>{o.date}</span>
-                      {o.deliveryTime && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
+                      {isCancelled && <span style={{marginLeft:8,background:'#fee2e2',color:'#991b1b',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>CANCELLED</span>}
+                      {o.deliveryTime && !isCancelled && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
                     </div>
                     <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                      <span style={{fontSize:18,fontWeight:800,color:'var(--g600)'}}>₹{o.total}</span>
+                      <span style={{fontSize:18,fontWeight:800,color:isCancelled?'#9ca3af':'var(--g600)'}}>₹{o.total}</span>
                       {o.status==='delivered' && (
                         <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'5px 12px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice PDF</button>
                       )}
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="progress-bar">
-                    {STATUS_ORDER.map((s,i)=>(
-                      <React.Fragment key={s}>
-                        <div className="progress-step">
-                          <div className={`progress-dot ${i<si?'done':i===si?'active':'future'}`}>
-                            {i<si ? '✓' : i+1}
+                  {/* Progress Bar — hidden when cancelled */}
+                  {!isCancelled && (
+                    <div className="progress-bar">
+                      {STATUS_ORDER.map((s,i)=>(
+                        <React.Fragment key={s}>
+                          <div className="progress-step">
+                            <div className={`progress-dot ${i<si?'done':i===si?'active':'future'}`}>
+                              {i<si ? '✓' : i+1}
+                            </div>
+                            <div className="progress-label" style={{color:i<=si?'var(--g700)':'#9ca3af',fontWeight:i===si?700:400}}>
+                              {STATUS_LABELS[s]}
+                            </div>
                           </div>
-                          <div className="progress-label" style={{color:i<=si?'var(--g700)':'#9ca3af',fontWeight:i===si?700:400}}>
-                            {STATUS_LABELS[s]}
-                          </div>
-                        </div>
-                        {i<STATUS_ORDER.length-1 && <div className={`progress-line ${i<si?'done':'future'}`}/>}
-                      </React.Fragment>
-                    ))}
-                  </div>
+                          {i<STATUS_ORDER.length-1 && <div className={`progress-line ${i<si?'done':'future'}`}/>}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Items */}
                   <div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginBottom:12}}>
@@ -780,6 +792,19 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                   {o.status==='verified' && (
                     <div style={{background:'#d1fae5',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#065f46',border:'1px solid #6ee7b7'}}>
                       ✅ Payment verified! Your order has been confirmed.
+                    </div>
+                  )}
+                  {isCancelled && (
+                    <div style={{background:'#fee2e2',borderRadius:8,padding:'11px 14px',fontSize:13,color:'#991b1b',border:'1px solid #fca5a5',fontWeight:500}}>
+                      🚫 {o.cancelNote || 'This order has been cancelled.'}
+                    </div>
+                  )}
+                  {canCancel && (
+                    <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+                      <button onClick={()=>cancelOrder(o)} style={{background:'#fff',color:'#991b1b',border:'1.5px solid #fca5a5',borderRadius:7,padding:'7px 16px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Inter'}}>
+                        ✕ Cancel Order
+                      </button>
+                      <span style={{fontSize:11,color:'#9ca3af',marginLeft:10}}>Full refund of ₹{o.total} will be issued</span>
                     </div>
                   )}
                 </div>
@@ -876,6 +901,12 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
     showToast('Order ' + id + ' confirmed with delivery: ' + time);
   };
 
+  const rejectOrder = (id) => {
+    if (!window.confirm('Reject this order? The customer will be notified that payment was not verified. This cannot be undone.')) return;
+    updateOrder(id, {status:'cancelled', cancelledBy:'admin', cancelNote:'Payment could not be verified. Please contact us if you believe this is an error.'});
+    showToast('Order ' + id + ' rejected — marked as cancelled.');
+  };
+
   return (
     <div style={{minHeight:'100vh',background:'#f4faf4'}}>
       {/* Admin Nav */}
@@ -927,7 +958,7 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
         {tab==='orders' && (
           <div>
             <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
-              {[['all','All'],['screenshot','Needs Verify'],['confirmed','Confirmed'],['out_for_delivery','Out for Delivery'],['delivered','Delivered'],['cancelled','Cancelled']].map(([k,l])=>(
+              {[['all','All'],['screenshot','Needs Verify'],['confirmed','Confirmed'],['out_for_delivery','Out for Delivery'],['delivered','Delivered']].map(([k,l])=>(
                 <button key={k} onClick={()=>setFilter(k)} style={{padding:'6px 14px',borderRadius:20,border:'1px solid '+(filter===k?'var(--g500)':'var(--border)'),background:filter===k?'var(--g50)':'#fff',color:filter===k?'var(--g700)':'var(--muted)',fontSize:12,cursor:'pointer',fontWeight:filter===k?700:400,fontFamily:'Inter',transition:'all .15s'}}>
                   {l}
                 </button>
@@ -985,7 +1016,7 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
                         style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
                       />
                       <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Verify & Confirm</button>
-                      <button className="btn-danger" onClick={()=>{updateOrder(o.id,{status:'cancelled'});showToast('Order '+o.id+' rejected');}}>✕ Reject</button>
+                      <button onClick={()=>rejectOrder(o.id)} style={{background:'#fee2e2',color:'#991b1b',border:'1.5px solid #fca5a5',borderRadius:7,padding:'9px 16px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Inter'}}>✕ Reject Payment</button>
                     </div>
                   </div>
                 )}
@@ -1005,6 +1036,11 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
                 )}
                 {o.status==='delivered' && (
                   <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Download Invoice PDF</button>
+                )}
+                {o.status==='cancelled' && (
+                  <div style={{background:'#fee2e2',borderRadius:8,padding:'11px 14px',fontSize:13,color:'#991b1b',border:'1px solid #fca5a5',fontWeight:500}}>
+                    🚫 {o.cancelledBy==='admin' ? 'Rejected by admin' : 'Cancelled by customer'} — {o.cancelNote||'Order cancelled.'}
+                  </div>
                 )}
               </div>
             ))}
