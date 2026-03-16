@@ -7,6 +7,8 @@
 <meta name="description" content="Pure, safe, ISI-certified packaged drinking water delivered to your door across Jharkhand."/>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -79,6 +81,22 @@ label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bot
 </head>
 <body>
 <div id="root"></div>
+
+<script>
+/* ---- Firebase init (runs before React) ---- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBodg0SAQEkLenglJSieNArN0Lo2RmvC_c",
+  authDomain: "lifeline-water-55608.firebaseapp.com",
+  databaseURL: "https://lifeline-water-55608-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "lifeline-water-55608",
+  storageBucket: "lifeline-water-55608.firebasestorage.app",
+  messagingSenderId: "254392538181",
+  appId: "1:254392538181:web:922936e95b31340c887f2c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
+
 <script type="text/babel">
 /* =============================================
    LIFELINE PACKAGED DRINKING WATER
@@ -211,52 +229,114 @@ function generateInvoice(order) {
    MAIN APP
    ============================================= */
 function App() {
-  const [page, setPage]     = useState('home');
-  const [user, setUser]     = useState(() => load('ll_user', null));
-  const [users, setUsers]   = useState(() => load('ll_users', [
-    {id:'C-001',name:'Raj Sharma',   email:'raj@example.com',  password:'raj123',  phone:'9876543210',address:'House 12, Sector 5, Ranchi, Jharkhand'},
-    {id:'C-002',name:'Priya Mehta',  email:'priya@example.com',password:'priya123',phone:'9812345678',address:'Flat 7B, Green Colony, Noida'},
-  ]));
-  const [orders, setOrders] = useState(() => load('ll_orders', [
-    {id:'ORD-001',cid:'C-001',cname:'Raj Sharma',phone:'9876543210',items:[{pid:'p3',name:'20L Refillable Jar',qty:2,price:50,deposit:100}],sub:100,dep:200,total:300,status:'delivered',screenshot:'uploaded',deliveryTime:'Delivered 16 Mar',address:'House 12, Sector 5, Ranchi, Jharkhand',date:'2024-03-16'},
-    {id:'ORD-002',cid:'C-002',cname:'Priya Mehta',phone:'9812345678',items:[{pid:'p1',name:'1L Bottle Carton',qty:3,price:80,deposit:0}],sub:240,dep:0,total:240,status:'screenshot',screenshot:'uploaded',deliveryTime:'',address:'Flat 7B, Green Colony, Noida',date:'2024-03-17'},
-  ]));
-  const [toast, setToast]   = useState('');
-  const oidRef  = useRef(load('ll_oid', 3));
-  const uidRef  = useRef(load('ll_uid', 3));
+  const [page,    setPage]    = useState('home');
+  const [user,    setUser]    = useState(() => load('ll_user', null));
+  const [users,   setUsers]   = useState([]);
+  const [orders,  setOrders]  = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast,   setToast]   = useState('');
 
+  /* ---- Real-time Firebase listeners ---- */
+  useEffect(() => {
+    let usersReady = false, ordersReady = false;
+    const checkReady = () => { if (usersReady && ordersReady) setLoading(false); };
+
+    /* USERS */
+    const usersRef = db.ref('users');
+    usersRef.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        setUsers(Object.values(data));
+      } else {
+        /* Seed demo users on very first run */
+        const demo = [
+          {id:'C-001',name:'Raj Sharma',  email:'raj@example.com',  password:'raj123',  phone:'9876543210',address:'House 12, Sector 5, Ranchi, Jharkhand'},
+          {id:'C-002',name:'Priya Mehta', email:'priya@example.com',password:'priya123',phone:'9812345678',address:'Flat 7B, Green Colony, Ranchi, Jharkhand'},
+        ];
+        demo.forEach(u => db.ref('users/' + u.id).set(u));
+        db.ref('meta/uidCounter').set(3);
+      }
+      usersReady = true; checkReady();
+    });
+
+    /* ORDERS */
+    const ordersRef = db.ref('orders');
+    ordersRef.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        setOrders(Object.values(data).sort((a,b)=>a.id.localeCompare(b.id)));
+      } else {
+        /* Seed demo orders on very first run */
+        const demo = [
+          {id:'ORD-001',cid:'C-001',cname:'Raj Sharma',phone:'9876543210',
+           items:[{pid:'p3',name:'20L Refillable Jar',qty:2,price:50,deposit:100}],
+           sub:100,dep:200,total:300,status:'delivered',deliveryTime:'Delivered 16 Mar',
+           address:'House 12, Sector 5, Ranchi, Jharkhand',date:'2024-03-16'},
+          {id:'ORD-002',cid:'C-002',cname:'Priya Mehta',phone:'9812345678',
+           items:[{pid:'p1',name:'1L Bottle Carton',qty:3,price:80,deposit:0}],
+           sub:240,dep:0,total:240,status:'screenshot',
+           address:'Flat 7B, Green Colony, Ranchi, Jharkhand',date:'2024-03-17'},
+        ];
+        demo.forEach(o => db.ref('orders/' + o.id).set(o));
+        db.ref('meta/oidCounter').set(3);
+        setOrders(demo);
+      }
+      ordersReady = true; checkReady();
+    });
+
+    return () => { usersRef.off(); ordersRef.off(); };
+  }, []);
+
+  /* Keep logged-in user in localStorage (session only) */
   useEffect(() => { save('ll_user', user); }, [user]);
-  useEffect(() => { save('ll_users', users); }, [users]);
-  useEffect(() => { save('ll_orders', orders); }, [orders]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(''), 3200); };
 
   const login = (email, password) => {
     if (email==='admin@lifeline.com' && password==='admin123') {
-      const a = {id:'ADMIN',name:'Admin',role:'admin'}; setUser(a); setPage('admin'); return true;
+      const a = {id:'ADMIN',name:'Admin',role:'admin'};
+      setUser(a); setPage('admin'); return true;
     }
     const u = users.find(x=>x.email===email && x.password===password);
     if (u) { setUser(u); setPage('customer'); return true; }
     return false;
   };
-  const register = (data) => {
-    const id = 'C-' + String(uidRef.current).padStart(3,'0');
-    uidRef.current++; save('ll_uid', uidRef.current);
+
+  const register = async (data) => {
+    const snap = await db.ref('meta/uidCounter').once('value');
+    const count = snap.val() || 3;
+    const id = 'C-' + String(count).padStart(3,'0');
+    await db.ref('meta/uidCounter').set(count + 1);
     const nu = {...data, id, role:'customer'};
-    setUsers(p=>[...p,nu]); setUser(nu); setPage('customer');
+    await db.ref('users/' + id).set(nu);
+    setUser(nu); setPage('customer');
     showToast('Welcome, ' + data.name + '! Your Client ID: ' + id);
   };
-  const placeOrder = (od) => {
-    const id = 'ORD-' + String(oidRef.current).padStart(3,'0');
-    oidRef.current++; save('ll_oid', oidRef.current);
+
+  const placeOrder = async (od) => {
+    const snap = await db.ref('meta/oidCounter').once('value');
+    const count = snap.val() || 3;
+    const id = 'ORD-' + String(count).padStart(3,'0');
+    await db.ref('meta/oidCounter').set(count + 1);
     const no = { id, cid:user.id, cname:user.name, phone:user.phone||'', ...od,
-      status:'pending', screenshot:null, deliveryTime:'',
-      date:new Date().toISOString().slice(0,10) };
-    setOrders(p=>[...p,no]); return id;
+      status:'pending', deliveryTime:'', date:new Date().toISOString().slice(0,10) };
+    await db.ref('orders/' + id).set(no);
+    return id;
   };
-  const updateOrder = (id, updates) => setOrders(p=>p.map(o=>o.id===id?{...o,...updates}:o));
+
+  const updateOrder = (id, updates) => db.ref('orders/' + id).update(updates);
+
   const logout = () => { setUser(null); setPage('home'); showToast('Logged out successfully'); };
   const myOrders = user ? orders.filter(o=>o.cid===user.id) : [];
+
+  if (loading) return (
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#f4faf4',gap:16}}>
+      <div style={{fontSize:40}}>💧</div>
+      <div style={{fontFamily:'Inter',fontWeight:700,color:'var(--g700)',fontSize:18}}>Lifeline</div>
+      <div style={{width:38,height:38,border:'4px solid var(--g200)',borderTopColor:'var(--g500)',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
   return (
     <>
@@ -541,9 +621,9 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
 
   const adjustCart = (pid,delta) => setCart(p=>({...p,[pid]:Math.max(0,(p[pid]||0)+delta)}));
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const items = cartItems.map(c=>({pid:c.id,name:c.name,qty:c.qty,price:c.price,deposit:c.deposit||0}));
-    const id = placeOrder({items,sub,dep,total,address:addr});
+    const id = await placeOrder({items,sub,dep,total,address:addr});
     setLastOid(id); setCart({p1:0,p2:0,p3:0}); setStep(0); setTab('track');
     showToast('Order ' + id + ' placed! Please upload payment screenshot.');
   };
