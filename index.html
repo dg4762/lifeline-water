@@ -90,10 +90,157 @@ const {jsPDF} = window.jspdf || {};
 
 /* ---------- DATA ---------- */
 const PRODUCTS = [
-  { id:'p1', name:'1L Bottle Carton', detail:'1 Litre × 12 Bottles', price:80,  deposit:0,   unit:'carton', img:'🧴', desc:'Perfect for daily home & office hydration' },
-  { id:'p2', name:'200ml Cup Pallet', detail:'200ml × 24 Cups',       price:120, deposit:0,   unit:'pallet', img:'🥤', desc:'Great for events, canteens & functions'   },
-  { id:'p3', name:'20L Refillable Jar',detail:'20 Litre Reusable Jar',price:50,  deposit:100, unit:'jar',    img:'🪣', desc:'Best value — ₹100 deposit refunded on return' },
+  { id:'p1', name:'1L Bottle Carton',   detail:'1 Litre × 12 Bottles',  price:80,  deposit:0,   unit:'carton', desc:'Perfect for daily home & office hydration' },
+  { id:'p2', name:'200ml Bottle Pallet',detail:'200ml × 24 Bottles',     price:120, deposit:0,   unit:'pallet', desc:'Great for events, canteens & functions'   },
+  { id:'p3', name:'20L Refillable Jar', detail:'20 Litre Reusable Jar',  price:50,  deposit:100, unit:'jar',    desc:'Best value — ₹100 deposit refunded on return' },
 ];
+
+/* SVG product illustrations */
+const Bottle1L = () => (
+  <svg viewBox="0 0 100 180" width="80" height="144" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="b1body" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#b8e0f7"/>
+        <stop offset="35%" stopColor="#e8f7ff"/>
+        <stop offset="70%" stopColor="#c5e8f5"/>
+        <stop offset="100%" stopColor="#90cce8"/>
+      </linearGradient>
+      <linearGradient id="b1label" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#2d7a2d"/>
+        <stop offset="100%" stopColor="#1a4d1a"/>
+      </linearGradient>
+      <linearGradient id="b1water" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#a8d8f0" stopOpacity="0.6"/>
+        <stop offset="100%" stopColor="#5bb8e8" stopOpacity="0.5"/>
+      </linearGradient>
+    </defs>
+    {/* Cap */}
+    <rect x="38" y="8" width="24" height="16" rx="5" fill="#1a4d1a"/>
+    <rect x="40" y="6" width="20" height="6" rx="3" fill="#2d7a2d"/>
+    {/* Neck */}
+    <rect x="36" y="22" width="28" height="14" rx="4" fill="url(#b1body)"/>
+    <rect x="37" y="23" width="8" height="12" rx="2" fill="white" fillOpacity="0.5"/>
+    {/* Shoulder */}
+    <path d="M26 36 Q26 42 28 44 L72 44 Q74 42 74 36 Z" fill="url(#b1body)"/>
+    {/* Body */}
+    <rect x="26" y="44" width="48" height="112" rx="6" fill="url(#b1body)"/>
+    {/* Water fill */}
+    <rect x="27" y="80" width="46" height="75" rx="5" fill="url(#b1water)"/>
+    {/* Label */}
+    <rect x="28" y="58" width="44" height="54" rx="4" fill="url(#b1label)"/>
+    {/* Label text lines */}
+    <rect x="34" y="65" width="32" height="3" rx="1.5" fill="white" fillOpacity="0.9"/>
+    <text x="50" y="82" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="10" fill="white">Lifeline</text>
+    <rect x="36" y="87" width="28" height="2" rx="1" fill="white" fillOpacity="0.5"/>
+    <text x="50" y="98" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="7.5" fill="#a8e063">PURE WATER</text>
+    <text x="50" y="107" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="9" fill="white">1 LITRE</text>
+    {/* Highlight */}
+    <rect x="29" y="45" width="7" height="110" rx="3" fill="white" fillOpacity="0.25"/>
+    {/* Bottom */}
+    <ellipse cx="50" cy="156" rx="22" ry="4" fill="#7ab8d0" fillOpacity="0.4"/>
+  </svg>
+);
+
+const Bottle200ml = () => (
+  <svg viewBox="0 0 80 150" width="64" height="120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="b2body" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#b8e0f7"/>
+        <stop offset="40%" stopColor="#e8f7ff"/>
+        <stop offset="70%" stopColor="#c5e8f5"/>
+        <stop offset="100%" stopColor="#90cce8"/>
+      </linearGradient>
+      <linearGradient id="b2label" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#2d7a2d"/>
+        <stop offset="100%" stopColor="#1a4d1a"/>
+      </linearGradient>
+      <linearGradient id="b2water" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#a8d8f0" stopOpacity="0.6"/>
+        <stop offset="100%" stopColor="#5bb8e8" stopOpacity="0.5"/>
+      </linearGradient>
+    </defs>
+    {/* Cap */}
+    <rect x="30" y="7" width="20" height="13" rx="4" fill="#1a4d1a"/>
+    <rect x="32" y="5" width="16" height="5" rx="2.5" fill="#2d7a2d"/>
+    {/* Neck */}
+    <rect x="28" y="18" width="24" height="12" rx="3" fill="url(#b2body)"/>
+    <rect x="29" y="19" width="6" height="10" rx="2" fill="white" fillOpacity="0.5"/>
+    {/* Shoulder */}
+    <path d="M20 30 Q20 35 22 37 L58 37 Q60 35 60 30 Z" fill="url(#b2body)"/>
+    {/* Body */}
+    <rect x="20" y="37" width="40" height="90" rx="5" fill="url(#b2body)"/>
+    {/* Water fill */}
+    <rect x="21" y="68" width="38" height="58" rx="4" fill="url(#b2water)"/>
+    {/* Label */}
+    <rect x="22" y="48" width="36" height="44" rx="3" fill="url(#b2label)"/>
+    <rect x="26" y="53" width="28" height="2.5" rx="1.2" fill="white" fillOpacity="0.9"/>
+    <text x="40" y="67" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="8.5" fill="white">Lifeline</text>
+    <rect x="28" y="71" width="24" height="1.5" rx="0.8" fill="white" fillOpacity="0.5"/>
+    <text x="40" y="79" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="6" fill="#a8e063">PURE WATER</text>
+    <text x="40" y="87" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="8" fill="white">200 ML</text>
+    {/* Highlight */}
+    <rect x="22" y="38" width="6" height="88" rx="3" fill="white" fillOpacity="0.25"/>
+    {/* Bottom */}
+    <ellipse cx="40" cy="127" rx="18" ry="3" fill="#7ab8d0" fillOpacity="0.4"/>
+  </svg>
+);
+
+const Jar20L = () => (
+  <svg viewBox="0 0 120 180" width="96" height="144" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="j1body" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#a8d4f0"/>
+        <stop offset="30%" stopColor="#daf0fc"/>
+        <stop offset="65%" stopColor="#b8e2f8"/>
+        <stop offset="100%" stopColor="#80c0e0"/>
+      </linearGradient>
+      <linearGradient id="j1water" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#5bb8e8" stopOpacity="0.55"/>
+        <stop offset="100%" stopColor="#2a8ac8" stopOpacity="0.65"/>
+      </linearGradient>
+      <linearGradient id="j1cap" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#3a9a3a"/>
+        <stop offset="100%" stopColor="#1a4d1a"/>
+      </linearGradient>
+    </defs>
+    {/* Handle left */}
+    <path d="M22 55 Q8 55 8 75 Q8 95 22 95" fill="none" stroke="#90c8e0" strokeWidth="7" strokeLinecap="round"/>
+    {/* Handle right */}
+    <path d="M98 55 Q112 55 112 75 Q112 95 98 95" fill="none" stroke="#90c8e0" strokeWidth="7" strokeLinecap="round"/>
+    {/* Cap base */}
+    <rect x="38" y="10" width="44" height="8" rx="4" fill="#2d7a2d"/>
+    {/* Cap */}
+    <rect x="36" y="5" width="48" height="18" rx="7" fill="url(#j1cap)"/>
+    <rect x="42" y="8" width="14" height="10" rx="3" fill="#4db84d" fillOpacity="0.5"/>
+    {/* Neck */}
+    <rect x="32" y="22" width="56" height="16" rx="6" fill="url(#j1body)"/>
+    <rect x="34" y="23" width="12" height="13" rx="4" fill="white" fillOpacity="0.4"/>
+    {/* Shoulder */}
+    <path d="M14 38 Q14 48 18 50 L102 50 Q106 48 106 38 Z" fill="url(#j1body)"/>
+    {/* Body */}
+    <rect x="14" y="50" width="92" height="110" rx="10" fill="url(#j1body)"/>
+    {/* Water fill */}
+    <rect x="15" y="80" width="90" height="79" rx="9" fill="url(#j1water)"/>
+    {/* Water surface shimmer */}
+    <ellipse cx="60" cy="80" rx="44" ry="4" fill="#5bb8e8" fillOpacity="0.3"/>
+    {/* Label */}
+    <rect x="20" y="58" width="80" height="62" rx="6" fill="white" fillOpacity="0.15"/>
+    <rect x="22" y="60" width="76" height="58" rx="5" fill="#1a4d1a" fillOpacity="0.82"/>
+    <rect x="26" y="65" width="68" height="2.5" rx="1.2" fill="white" fillOpacity="0.8"/>
+    <text x="60" y="82" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="14" fill="white">Lifeline</text>
+    <rect x="28" y="86" width="64" height="1.5" rx="0.8" fill="#a8e063" fillOpacity="0.7"/>
+    <text x="60" y="96" textAnchor="middle" fontFamily="Inter,sans-serif" fontSize="8" fill="#a8e063">PACKAGED DRINKING WATER</text>
+    <text x="60" y="109" textAnchor="middle" fontFamily="Inter,sans-serif" fontWeight="700" fontSize="13" fill="white">20 LITRES</text>
+    {/* Highlight streak */}
+    <rect x="16" y="51" width="10" height="108" rx="5" fill="white" fillOpacity="0.22"/>
+    {/* Bottom */}
+    <ellipse cx="60" cy="160" rx="44" ry="6" fill="#60a8cc" fillOpacity="0.35"/>
+    {/* Refill indicator lines */}
+    <line x1="108" y1="90" x2="114" y2="90" stroke="#90c8e0" strokeWidth="2"/>
+    <line x1="108" y1="110" x2="114" y2="110" stroke="#90c8e0" strokeWidth="2"/>
+    <line x1="108" y1="130" x2="114" y2="130" stroke="#90c8e0" strokeWidth="2"/>
+  </svg>
+);
 
 const STATUS_ORDER = ['pending','screenshot','verified','confirmed','out_for_delivery','delivered'];
 const STATUS_LABELS = {
@@ -346,9 +493,11 @@ function Home({setPage, user, logout, showToast}) {
           <p style={{color:'var(--muted)',fontSize:16}}>Pure water in every size, for every need</p>
         </div>
         <div className="products-grid" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
-          {PRODUCTS.map(p=>(
+          {PRODUCTS.map(p=>{
+            const Img = p.id==='p1'?Bottle1L:p.id==='p2'?Bottle200ml:Jar20L;
+            return(
             <div key={p.id} className="card" style={{textAlign:'center',cursor:'pointer',transition:'transform .2s,box-shadow .2s',padding:'28px 20px'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-6px)';e.currentTarget.style.boxShadow='0 10px 36px rgba(45,122,45,0.16)'}} onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='var(--shadow)'}}>
-              <div style={{fontSize:50,marginBottom:12}}>{p.img}</div>
+              <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',height:120,marginBottom:14}}><Img/></div>
               <div style={{fontWeight:700,fontSize:16,color:'var(--g800)',marginBottom:5}}>{p.name}</div>
               <div style={{background:'var(--g50)',display:'inline-block',padding:'3px 12px',borderRadius:20,fontSize:12,color:'var(--g700)',fontWeight:600,marginBottom:10}}>{p.detail}</div>
               <p style={{color:'var(--muted)',fontSize:13,lineHeight:1.6,marginBottom:18}}>{p.desc}</p>
@@ -358,7 +507,8 @@ function Home({setPage, user, logout, showToast}) {
                 {p.deposit>0 && <div style={{fontSize:12,color:'var(--warn)',marginTop:4,fontWeight:500}}>+ ₹{p.deposit} refundable deposit</div>}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
         <div style={{textAlign:'center',marginTop:28}}>
           <button className="btn-primary" style={{padding:'14px 36px',fontSize:16,borderRadius:10}} onClick={()=>setPage('auth')}>Order Now →</button>
@@ -577,10 +727,12 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
             {step===0 && (
               <div className="card">
                 <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:20}}>Select Products</h3>
-                {PRODUCTS.map(p=>(
+                {PRODUCTS.map(p=>{
+                  const Img=p.id==='p1'?Bottle1L:p.id==='p2'?Bottle200ml:Jar20L;
+                  return(
                   <div key={p.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 0',borderBottom:'1px solid var(--border)',flexWrap:'wrap',gap:10}}>
                     <div style={{display:'flex',gap:14,alignItems:'center',flex:1}}>
-                      <span style={{fontSize:36}}>{p.img}</span>
+                      <div style={{width:48,display:'flex',justifyContent:'center',flexShrink:0}}><Img/></div>
                       <div>
                         <div style={{fontWeight:700,fontSize:15,color:'var(--g800)'}}>{p.name}</div>
                         <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{p.detail}</div>
@@ -597,7 +749,8 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                       <button style={{width:34,height:34,borderRadius:7,background:'var(--g600)',border:'none',cursor:'pointer',fontSize:18,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}} onClick={()=>adjustCart(p.id,1)}>+</button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 <div className="fg" style={{marginTop:18}}>
                   <label>Delivery Address *</label>
                   <textarea value={addr} onChange={e=>setAddr(e.target.value)} style={{resize:'none',height:76}} placeholder="Full delivery address with landmark"/>
