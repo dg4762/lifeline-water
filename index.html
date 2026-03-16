@@ -753,25 +753,45 @@ function Auth({login, register, setPage}) {
    CUSTOMER DASHBOARD
    ============================================= */
 function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, showToast, inventory={p1:999,p2:999,p3:999}, restoreInventory}) {
-  const [tab, setTab]       = useState('order');
-  const [cart, setCart]     = useState({p1:0,p2:0,p3:0});
-  const [addr, setAddr]     = useState(user.address||'');
-  const [step, setStep]     = useState(0);
-  const [lastOid, setLastOid] = useState(null);
-  const fileRefs            = useRef({});
+  const [tab, setTab]             = useState('order');
+  const [cart, setCart]           = useState({p1:0,p2:0,p3:0});
+  const [addr, setAddr]           = useState(user.address||'');
+  const [fulfillment, setFulfillment] = useState('delivery');   // 'delivery' | 'pickup'
+  const [payMethod, setPayMethod] = useState('prepaid');        // 'prepaid' | 'cash'
+  const [step, setStep]           = useState(0);
+  const [lastOid, setLastOid]     = useState(null);
+  const fileRefs                  = useRef({});
 
   const cartItems = PRODUCTS.map(p=>({...p,qty:cart[p.id]||0})).filter(p=>p.qty>0);
   const sub       = cartItems.reduce((a,c)=>a+c.price*c.qty,0);
   const dep       = cartItems.reduce((a,c)=>a+(c.deposit||0)*c.qty,0);
   const total     = sub+dep;
 
+  // delivery always prepaid; reset payMethod when switching fulfillment
+  const chooseFulfillment = (val) => {
+    setFulfillment(val);
+    if (val==='delivery') setPayMethod('prepaid');
+  };
+
   const adjustCart = (pid,delta) => setCart(p=>({...p,[pid]:Math.max(0,(p[pid]||0)+delta)}));
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (method) => {
+    const pm = method || payMethod;
     const items = cartItems.map(c=>({pid:c.id,name:c.name,qty:c.qty,price:c.price,deposit:c.deposit||0}));
-    const id = await placeOrder({items,sub,dep,total,address:addr});
-    setLastOid(id); setCart({p1:0,p2:0,p3:0}); setStep(0); setTab('track');
-    showToast('Order ' + id + ' placed! Please upload payment screenshot.');
+    const id = await placeOrder({
+      items, sub, dep, total,
+      address: fulfillment==='delivery' ? addr : 'Store Pickup',
+      fulfillment,
+      paymentMethod: pm,
+    });
+    setLastOid(id);
+    setCart({p1:0,p2:0,p3:0});
+    setStep(0); setTab('track');
+    if (pm==='cash') {
+      showToast('Order ' + id + ' placed! Pay cash when you pick up.');
+    } else {
+      showToast('Order ' + id + ' placed! Please upload payment screenshot.');
+    }
   };
 
   const handleFileUpload = (oid, file) => {
@@ -792,6 +812,9 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
     updateOrder(o.id, {status:'cancelled', cancelledBy:'customer', cancelledAt: t, cancelNote:'Cancelled by customer — full refund of ₹' + o.total + ' will be processed within 3–5 business days.'});
     showToast('Order ' + o.id + ' cancelled. Refund will be processed.');
   };
+
+  /* step 0 proceed guard */
+  const canProceed = cartItems.length > 0 && (fulfillment==='pickup' || addr.trim().length>0);
 
   return (
     <div style={{minHeight:'100vh',background:'#f4faf4'}}>
@@ -822,6 +845,8 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
         {/* PLACE ORDER */}
         {tab==='order' && (
           <div>
+
+            {/* ── STEP 0: Products + Fulfillment ── */}
             {step===0 && (
               <div className="card">
                 <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:20}}>Select Products</h3>
@@ -866,28 +891,60 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                   </div>
                   );
                 })}
-                <div className="fg" style={{marginTop:18}}>
-                  <label>Delivery Address *</label>
-                  <textarea value={addr} onChange={e=>setAddr(e.target.value)} style={{resize:'none',height:76}} placeholder="Full delivery address with landmark"/>
+
+                {/* ── Fulfillment Selector ── */}
+                <div style={{marginTop:22,marginBottom:4}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'var(--g800)',marginBottom:10}}>How would you like to receive your order?</div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                    {[
+                      ['delivery','🚚','Home Delivery','We deliver to your door'],
+                      ['pickup','🏪','Store Pickup','Collect from our store'],
+                    ].map(([val,icon,title,sub])=>(
+                      <div key={val}
+                        onClick={()=>chooseFulfillment(val)}
+                        style={{border:'2px solid '+(fulfillment===val?'var(--g500)':'var(--border)'),borderRadius:10,padding:'14px',cursor:'pointer',background:fulfillment===val?'var(--g50)':'#fff',transition:'all .15s'}}
+                      >
+                        <div style={{fontSize:22,marginBottom:5}}>{icon}</div>
+                        <div style={{fontWeight:700,fontSize:14,color:'var(--g800)'}}>{title}</div>
+                        <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{sub}</div>
+                        {fulfillment===val && <div style={{fontSize:11,color:'var(--g600)',fontWeight:700,marginTop:6}}>✓ Selected</div>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Address — only for delivery */}
+                {fulfillment==='delivery' && (
+                  <div className="fg" style={{marginTop:16}}>
+                    <label>Delivery Address *</label>
+                    <textarea value={addr} onChange={e=>setAddr(e.target.value)} style={{resize:'none',height:76}} placeholder="House/flat no., street, area, landmark"/>
+                  </div>
+                )}
+                {fulfillment==='pickup' && (
+                  <div style={{background:'#e9d5ff',borderRadius:8,padding:'11px 14px',marginTop:16,fontSize:13,color:'#5b21b6',border:'1px solid #ddd6fe'}}>
+                    🏪 You'll collect your order from our store. Payment options will be shown on the next screen.
+                  </div>
+                )}
+
                 {dep>0 && (
-                  <div style={{background:'#fef3c7',borderRadius:8,padding:'10px 14px',marginBottom:14,fontSize:13,color:'#92400e',border:'1px solid #fde68a'}}>
+                  <div style={{background:'#fef3c7',borderRadius:8,padding:'10px 14px',marginTop:12,marginBottom:0,fontSize:13,color:'#92400e',border:'1px solid #fde68a'}}>
                     ℹ️ Includes <b>₹{dep}</b> refundable security deposit for {cartItems.find(c=>c.deposit>0)?.qty} jar(s). Returned when empty jar is handed back.
                   </div>
                 )}
-                <div style={{background:'var(--g50)',borderRadius:9,padding:'14px 18px',marginBottom:18,display:'flex',justifyContent:'space-between',alignItems:'center',border:'1px solid var(--border)'}}>
+                <div style={{background:'var(--g50)',borderRadius:9,padding:'14px 18px',marginTop:14,marginBottom:18,display:'flex',justifyContent:'space-between',alignItems:'center',border:'1px solid var(--border)'}}>
                   <div>
                     <div style={{fontSize:13,color:'var(--muted)'}}>Water: ₹{sub}{dep>0?` + Deposit: ₹${dep}`:''}</div>
                     <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>Order Total</div>
                   </div>
                   <span style={{fontSize:26,fontWeight:800,color:'var(--g700)'}}>₹{total}</span>
                 </div>
-                <button className="btn-primary" style={{width:'100%',padding:14,fontSize:16,borderRadius:9}} disabled={!cartItems.length||!addr.trim()} onClick={()=>setStep(1)}>
+                <button className="btn-primary" style={{width:'100%',padding:14,fontSize:16,borderRadius:9}} disabled={!canProceed} onClick={()=>setStep(1)}>
                   {!cartItems.length ? 'Add products to continue' : 'Review Order →'}
                 </button>
               </div>
             )}
 
+            {/* ── STEP 1: Review + Payment Method ── */}
             {step===1 && (
               <div className="card">
                 <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:18}}>Review Your Order</h3>
@@ -905,19 +962,56 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                     </div>
                   ))}
                 </div>
-                <div style={{display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:18,color:'var(--g700)',padding:'10px 0',borderTop:'2px solid var(--border)',marginBottom:14}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:18,color:'var(--g700)',padding:'10px 0',borderTop:'2px solid var(--border)',marginBottom:16}}>
                   <span>Total</span><span>₹{total}</span>
                 </div>
-                <div style={{background:'var(--g50)',borderRadius:8,padding:'10px 14px',fontSize:13,color:'var(--g800)',marginBottom:20,border:'1px solid var(--border)'}}>
-                  📍 {addr}
+
+                {/* Fulfillment summary */}
+                <div style={{background:'var(--g50)',borderRadius:8,padding:'10px 14px',fontSize:13,color:'var(--g800)',marginBottom:16,border:'1px solid var(--border)',display:'flex',alignItems:'center',gap:8}}>
+                  {fulfillment==='delivery' ? <>🚚 <b>Home Delivery</b> — {addr}</> : <>🏪 <b>Store Pickup</b></>}
                 </div>
+
+                {/* Payment method — pickup only */}
+                {fulfillment==='pickup' && (
+                  <div style={{marginBottom:18}}>
+                    <div style={{fontSize:13,fontWeight:700,color:'var(--g800)',marginBottom:10}}>How would you like to pay?</div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                      {[
+                        ['prepaid','📱','Pay via UPI','Scan QR & pay now'],
+                        ['cash','💵','Cash at Store','Pay when you collect'],
+                      ].map(([val,icon,title,sub])=>(
+                        <div key={val}
+                          onClick={()=>setPayMethod(val)}
+                          style={{border:'2px solid '+(payMethod===val?'var(--g500)':'var(--border)'),borderRadius:10,padding:'14px',cursor:'pointer',background:payMethod===val?'var(--g50)':'#fff',transition:'all .15s'}}
+                        >
+                          <div style={{fontSize:22,marginBottom:5}}>{icon}</div>
+                          <div style={{fontWeight:700,fontSize:14,color:'var(--g800)'}}>{title}</div>
+                          <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{sub}</div>
+                          {payMethod===val && <div style={{fontSize:11,color:'var(--g600)',fontWeight:700,marginTop:6}}>✓ Selected</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {fulfillment==='delivery' && (
+                  <div style={{background:'#dbeafe',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#1e40af',marginBottom:18,border:'1px solid #bfdbfe'}}>
+                    📱 Home delivery requires prepayment via UPI. You'll scan a QR code on the next screen.
+                  </div>
+                )}
+
                 <div style={{display:'flex',gap:10}}>
                   <button className="btn-ghost" style={{flex:1}} onClick={()=>setStep(0)}>← Edit</button>
-                  <button className="btn-primary" style={{flex:2,padding:13,fontSize:15}} onClick={()=>setStep(2)}>Proceed to Payment →</button>
+                  {(fulfillment==='delivery' || payMethod==='prepaid') && (
+                    <button className="btn-primary" style={{flex:2,padding:13,fontSize:15}} onClick={()=>setStep(2)}>Proceed to Payment →</button>
+                  )}
+                  {fulfillment==='pickup' && payMethod==='cash' && (
+                    <button className="btn-primary" style={{flex:2,padding:13,fontSize:15,background:'#059669'}} onClick={()=>handlePlaceOrder('cash')}>Place Order — Pay at Store ✓</button>
+                  )}
                 </div>
               </div>
             )}
 
+            {/* ── STEP 2: QR Payment (prepaid only) ── */}
             {step===2 && (
               <div className="card" style={{textAlign:'center'}}>
                 <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:6}}>Complete Payment via UPI</h3>
@@ -940,7 +1034,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                 </p>
                 <div style={{display:'flex',gap:10,maxWidth:380,margin:'0 auto'}}>
                   <button className="btn-ghost" style={{flex:1}} onClick={()=>setStep(1)}>← Back</button>
-                  <button className="btn-primary" style={{flex:2,padding:14,fontSize:15}} onClick={handlePlaceOrder}>I've Paid — Place Order ✓</button>
+                  <button className="btn-primary" style={{flex:2,padding:14,fontSize:15}} onClick={()=>handlePlaceOrder('prepaid')}>I've Paid — Place Order ✓</button>
                 </div>
               </div>
             )}
@@ -952,7 +1046,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
           <div>
             {lastOid && (
               <div style={{background:'#d1fae5',border:'1px solid #6ee7b7',borderRadius:9,padding:'12px 16px',marginBottom:18,fontSize:14,color:'#065f46',fontWeight:500}}>
-                ✅ Order {lastOid} placed! Upload your payment screenshot below to confirm.
+                ✅ Order {lastOid} placed! {orders.find(o=>o.id===lastOid)?.paymentMethod==='cash' ? 'Bring cash when you collect from our store.' : 'Upload your payment screenshot below to confirm.'}
               </div>
             )}
             {orders.length===0 ? (
@@ -973,6 +1067,14 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                     <div>
                       <span style={{fontWeight:800,fontSize:16,color:'var(--g800)'}}>{o.id}</span>
                       {isCancelled && <span style={{marginLeft:8,background:'#fee2e2',color:'#991b1b',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>CANCELLED</span>}
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>
+                        {o.fulfillment==='pickup'
+                          ? <span style={{background:'#e9d5ff',color:'#5b21b6',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>🏪 Store Pickup</span>
+                          : <span style={{background:'#dbeafe',color:'#1e40af',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>🚚 Home Delivery</span>}
+                        {o.paymentMethod==='cash'
+                          ? <span style={{background:'#d1fae5',color:'#065f46',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>💵 Cash at Store</span>
+                          : <span style={{background:'#fef3c7',color:'#92400e',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>📱 UPI Prepaid</span>}
+                      </div>
                       {o.deliveryTime && !isCancelled && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
                     </div>
                     <div style={{display:'flex',gap:6,alignItems:'center'}}>
@@ -1032,7 +1134,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                   </div>
 
                   {/* Actions */}
-                  {o.status==='pending' && !o.screenshot && (
+                  {o.status==='pending' && !o.screenshot && o.paymentMethod!=='cash' && (
                     <div style={{background:'#fef3c7',borderRadius:9,padding:'13px 16px',border:'1px solid #fde68a'}}>
                       <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>
                         📎 Upload your UPI payment screenshot to confirm this order
@@ -1046,6 +1148,11 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                       <button className="btn-primary" style={{fontSize:13,padding:'9px 20px'}} onClick={()=>fileRefs.current[o.id]?.click()}>
                         📸 Upload Screenshot
                       </button>
+                    </div>
+                  )}
+                  {o.status==='pending' && o.paymentMethod==='cash' && (
+                    <div style={{background:'#d1fae5',borderRadius:8,padding:'11px 14px',fontSize:13,color:'#065f46',border:'1px solid #6ee7b7'}}>
+                      💵 Cash payment — bring ₹{o.total} when you collect from our store. We'll confirm your order shortly.
                     </div>
                   )}
                   {o.status==='screenshot' && (
@@ -1171,6 +1278,8 @@ function exportToExcel(orders, users, inventory) {
   const orderRows = orders.map(o => ({
     'Order ID':                o.id,
     'Order Date & Time':       fmt(o.orderDateTime || o.date),
+    'Fulfillment':             o.fulfillment==='pickup' ? 'Store Pickup' : 'Home Delivery',
+    'Payment Method':          o.paymentMethod==='cash' ? 'Cash at Store' : 'UPI Prepaid',
     'Payment Sent At':         fmt(o.screenshotAt),
     'Verified & Confirmed At': fmt(o.confirmedAt),
     'Out for Delivery At':     fmt(o.outForDeliveryAt),
@@ -1464,6 +1573,14 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                     </div>
                     <div style={{fontWeight:600,fontSize:13,color:'var(--text)',marginTop:4}}>{o.cname} · {o.phone}</div>
                     <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>📍 {o.address||'No address'}</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>
+                      {o.fulfillment==='pickup'
+                        ? <span style={{background:'#e9d5ff',color:'#5b21b6',fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10}}>🏪 Store Pickup</span>
+                        : <span style={{background:'#dbeafe',color:'#1e40af',fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10}}>🚚 Home Delivery</span>}
+                      {o.paymentMethod==='cash'
+                        ? <span style={{background:'#d1fae5',color:'#065f46',fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10}}>💵 Cash at Store</span>
+                        : <span style={{background:'#fef3c7',color:'#92400e',fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10}}>📱 UPI Prepaid</span>}
+                    </div>
                   </div>
                   <div style={{textAlign:'right'}}>
                     <div style={{fontSize:20,fontWeight:800,color:'var(--g600)'}}>₹{o.total}</div>
@@ -1510,7 +1627,23 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                   <div style={{background:'#e9d5ff',borderRadius:7,padding:'8px 12px',fontSize:13,color:'#5b21b6',marginBottom:12,fontWeight:500}}>🚚 {o.deliveryTime}</div>
                 )}
 
-                {/* Verify Payment */}
+                {/* Cash order — confirm without payment verification */}
+                {o.status==='pending' && o.paymentMethod==='cash' && (
+                  <div style={{background:'#d1fae5',borderRadius:9,padding:'14px 16px',border:'1px solid #6ee7b7'}}>
+                    <div style={{fontSize:13,fontWeight:700,color:'#065f46',marginBottom:10}}>💵 Cash on Pickup — confirm order and set ready time</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                      <input
+                        value={delivInp[o.id]||''}
+                        onChange={e=>setDelivInp(p=>({...p,[o.id]:e.target.value}))}
+                        placeholder="e.g. Ready by Tomorrow 10 AM"
+                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
+                      />
+                      <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Confirm Order</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Verify Payment — prepaid only */}
                 {o.status==='screenshot' && (
                   <div style={{background:'#fef3c7',borderRadius:9,padding:'14px 16px',border:'1px solid #fde68a'}}>
                     <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>💸 Payment screenshot received — verify and set delivery time</div>
