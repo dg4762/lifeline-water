@@ -130,6 +130,12 @@ const STATUS_LABELS = {
   out_for_delivery:'Out for Delivery', delivered:'Delivered',
   cancelled:'Cancelled'
 };
+/* Returns context-aware label for pickup vs delivery orders */
+const getStatusLabel = (status, fulfillment) => {
+  if (status==='out_for_delivery' && fulfillment==='pickup') return 'Ready for Pickup';
+  if (status==='delivered'        && fulfillment==='pickup') return 'Picked Up';
+  return STATUS_LABELS[status] || status;
+};
 
 /* ---------- PERSISTENT STORE (localStorage) ---------- */
 const load = (key, def) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch{ return def; } };
@@ -1075,7 +1081,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                           ? <span style={{background:'#d1fae5',color:'#065f46',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>💵 Cash at Store</span>
                           : <span style={{background:'#fef3c7',color:'#92400e',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>📱 UPI Prepaid</span>}
                       </div>
-                      {o.deliveryTime && !isCancelled && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
+                      {o.deliveryTime && !isCancelled && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>{o.fulfillment==='pickup'?'🏪':'🚚'} {o.deliveryTime}</div>}
                     </div>
                     <div style={{display:'flex',gap:6,alignItems:'center'}}>
                       <span style={{fontSize:18,fontWeight:800,color:isCancelled?'#9ca3af':'var(--g600)'}}>₹{o.total}</span>
@@ -1089,13 +1095,13 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                   <div style={{background:'var(--g50)',borderRadius:9,padding:'12px 14px',marginBottom:14,border:'1px solid var(--border)'}}>
                     <div style={{fontSize:11,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.8,marginBottom:8}}>Order Timeline</div>
                     {[
-                      ['📋','Order Placed',       o.orderDateTime],
-                      ['📸','Payment Sent',       o.screenshotAt],
-                      ['✅','Payment Verified',   o.verifiedAt],
-                      ['🚚','Out for Delivery',   o.outForDeliveryAt],
-                      ['🎉','Delivered',          o.deliveredAt],
-                      ['🚫','Cancelled',          o.cancelledAt],
-                    ].filter(([,, t])=>t).map(([icon,label,t])=>(
+                      ['📋','Order Placed',                                          o.orderDateTime],
+                      ['📸','Payment Sent',                                          o.screenshotAt],
+                      ['✅','Payment Verified',                                      o.verifiedAt],
+                      [o.fulfillment==='pickup'?'🏪':'🚚', o.fulfillment==='pickup'?'Ready for Pickup':'Out for Delivery', o.outForDeliveryAt],
+                      [o.fulfillment==='pickup'?'✅':'🎉',  o.fulfillment==='pickup'?'Picked Up':'Delivered',              o.deliveredAt],
+                      ['🚫','Cancelled',                                             o.cancelledAt],
+                    ].filter(([,,t])=>t).map(([icon,label,t])=>(
                       <div key={label} style={{display:'flex',gap:10,alignItems:'baseline',padding:'3px 0'}}>
                         <span style={{fontSize:12,minWidth:18}}>{icon}</span>
                         <span style={{fontSize:12,color:'var(--muted)',minWidth:130}}>{label}</span>
@@ -1114,7 +1120,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                               {i<si ? '✓' : i+1}
                             </div>
                             <div className="progress-label" style={{color:i<=si?'var(--g700)':'#9ca3af',fontWeight:i===si?700:400}}>
-                              {STATUS_LABELS[s]}
+                              {getStatusLabel(s, o.fulfillment)}
                             </div>
                           </div>
                           {i<STATUS_ORDER.length-1 && <div className={`progress-line ${i<si?'done':'future'}`}/>}
@@ -1455,11 +1461,15 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
   const sBadge = {pending:'b-pending',screenshot:'b-screenshot',verified:'b-verified',confirmed:'b-confirmed',out_for_delivery:'b-out',delivered:'b-delivered',cancelled:'b-cancelled'};
 
   const confirmOrder = (id) => {
-    const time = delivInp[id] || 'Delivery time to be confirmed';
+    const time = delivInp[id] || '';
+    if (!time.trim()) {
+      showToast('⚠ Please enter a delivery / ready time before confirming.');
+      return;
+    }
     const t = ts();
     updateOrder(id, {status:'confirmed', deliveryTime: time, verifiedAt: t, confirmedAt: t});
     setDelivInp(p=>({...p,[id]:''}));
-    showToast('Order ' + id + ' confirmed with delivery: ' + time);
+    showToast('Order ' + id + ' confirmed — ' + time);
   };
 
   const rejectOrder = (o) => {
@@ -1595,12 +1605,12 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                   <div style={{fontSize:10,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.8,marginBottom:6}}>Timeline</div>
                   <div style={{display:'flex',flexWrap:'wrap',gap:'2px 0',flexDirection:'column'}}>
                     {[
-                      ['📋','Order Placed',       o.orderDateTime],
-                      ['📸','Payment Sent',       o.screenshotAt],
-                      ['✅','Verified & Confirmed',o.confirmedAt],
-                      ['🚚','Out for Delivery',   o.outForDeliveryAt],
-                      ['🎉','Delivered',          o.deliveredAt],
-                      ['🚫','Cancelled',          o.cancelledAt],
+                      ['📋','Order Placed',                                               o.orderDateTime],
+                      ['📸','Payment Sent',                                               o.screenshotAt],
+                      ['✅','Verified & Confirmed',                                       o.confirmedAt],
+                      [o.fulfillment==='pickup'?'🏪':'🚚', o.fulfillment==='pickup'?'Ready for Pickup':'Out for Delivery', o.outForDeliveryAt],
+                      [o.fulfillment==='pickup'?'✅':'🎉',  o.fulfillment==='pickup'?'Picked Up':'Delivered',              o.deliveredAt],
+                      ['🚫','Cancelled',                                                  o.cancelledAt],
                     ].filter(([,,t])=>t).map(([icon,label,t])=>(
                       <div key={label} style={{display:'flex',gap:8,alignItems:'baseline'}}>
                         <span style={{fontSize:11,minWidth:18}}>{icon}</span>
@@ -1624,29 +1634,32 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                 </div>
 
                 {o.deliveryTime && (
-                  <div style={{background:'#e9d5ff',borderRadius:7,padding:'8px 12px',fontSize:13,color:'#5b21b6',marginBottom:12,fontWeight:500}}>🚚 {o.deliveryTime}</div>
+                  <div style={{background:'#e9d5ff',borderRadius:7,padding:'8px 12px',fontSize:13,color:'#5b21b6',marginBottom:12,fontWeight:500}}>
+                    {o.fulfillment==='pickup' ? '🏪' : '🚚'} {o.deliveryTime}
+                  </div>
                 )}
 
                 {/* Cash order — confirm without payment verification */}
                 {o.status==='pending' && o.paymentMethod==='cash' && (
                   <div style={{background:'#d1fae5',borderRadius:9,padding:'14px 16px',border:'1px solid #6ee7b7'}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#065f46',marginBottom:10}}>💵 Cash on Pickup — confirm order and set ready time</div>
+                    <div style={{fontSize:13,fontWeight:700,color:'#065f46',marginBottom:10}}>💵 Cash on Pickup — set ready time and confirm order</div>
                     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                       <input
                         value={delivInp[o.id]||''}
                         onChange={e=>setDelivInp(p=>({...p,[o.id]:e.target.value}))}
-                        placeholder="e.g. Ready by Tomorrow 10 AM"
-                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
+                        placeholder="Ready time e.g. Today 4 PM, Tomorrow 10 AM *"
+                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px',borderColor:!delivInp[o.id]?.trim()?'#f59e0b':'var(--border)'}}
                       />
                       <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Confirm Order</button>
                     </div>
+                    <div style={{fontSize:11,color:'#065f46',marginTop:6}}>* Required — customer will see this time</div>
                   </div>
                 )}
 
                 {/* Verify Payment — prepaid only */}
                 {o.status==='screenshot' && (
                   <div style={{background:'#fef3c7',borderRadius:9,padding:'14px 16px',border:'1px solid #fde68a'}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>💸 Payment screenshot received — verify and set delivery time</div>
+                    <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>💸 Payment screenshot received — verify and set {o.fulfillment==='pickup'?'pickup':'delivery'} time</div>
                     {o.screenshot && o.screenshot.startsWith('data:') && (
                       <div style={{marginBottom:12}}><ScreenshotThumb src={o.screenshot} name={o.screenshotName}/></div>
                     )}
@@ -1654,19 +1667,20 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                       <input
                         value={delivInp[o.id]||''}
                         onChange={e=>setDelivInp(p=>({...p,[o.id]:e.target.value}))}
-                        placeholder="e.g. Tomorrow 10–11 AM, Today 5 PM"
-                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
+                        placeholder={o.fulfillment==='pickup' ? 'Ready time e.g. Today 4 PM *' : 'Delivery time e.g. Tomorrow 10–11 AM *'}
+                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px',borderColor:!delivInp[o.id]?.trim()?'#f59e0b':'var(--border)'}}
                       />
                       <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Verify & Confirm</button>
                       <button onClick={()=>rejectOrder(o)} style={{background:'#fee2e2',color:'#991b1b',border:'1.5px solid #fca5a5',borderRadius:7,padding:'9px 16px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Inter'}}>✕ Reject Payment</button>
                     </div>
+                    <div style={{fontSize:11,color:'#92400e',marginTop:6}}>* Required — customer will see this time</div>
                   </div>
                 )}
 
                 {/* Actions by status */}
                 {o.status==='confirmed' && (
                   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                    <button className="btn-success" onClick={()=>{const t=ts();updateOrder(o.id,{status:'out_for_delivery',outForDeliveryAt:t});showToast(o.id+' marked as Out for Delivery');}}>🚚 Mark Out for Delivery</button>
+                    <button className="btn-success" onClick={()=>{const t=ts();updateOrder(o.id,{status:'out_for_delivery',outForDeliveryAt:t});showToast(o.id+(o.fulfillment==='pickup'?' marked as Ready for Pickup':' marked as Out for Delivery'));}}>{o.fulfillment==='pickup' ? '🏪 Mark Ready for Pickup' : '🚚 Mark Out for Delivery'}</button>
                     <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Download Invoice</button>
                   </div>
                 )}
