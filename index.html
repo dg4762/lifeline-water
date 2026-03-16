@@ -134,6 +134,7 @@ const STATUS_LABELS = {
 /* ---------- PERSISTENT STORE (localStorage) ---------- */
 const load = (key, def) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch{ return def; } };
 const save = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+const ts = () => new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
 
 /* ---------- PDF INVOICE ---------- */
 function generateInvoice(order) {
@@ -337,7 +338,8 @@ function App() {
     const no = { id, cid:user.id, cname:user.name, phone:user.phone||'', ...od,
       status:'pending', deliveryTime:'',
       date: now.toISOString().slice(0,10),
-      orderDateTime: now.toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})
+      orderDateTime: ts(),
+      timestamps: { ordered: ts() }
     };
     await db.ref('orders/' + id).set(no);
     /* Deduct inventory */
@@ -769,7 +771,8 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      updateOrder(oid, {screenshot: e.target.result, screenshotName: file.name, status:'screenshot'});
+      const t = ts();
+      updateOrder(oid, {screenshot: e.target.result, screenshotName: file.name, status:'screenshot', screenshotAt: t});
       showToast('Screenshot uploaded for ' + oid);
     };
     reader.readAsDataURL(file);
@@ -777,7 +780,8 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
 
   const cancelOrder = (o) => {
     if (!window.confirm('Cancel order ' + o.id + '?\n\nA full refund of ₹' + o.total + ' will be processed. This cannot be undone.')) return;
-    updateOrder(o.id, {status:'cancelled', cancelledBy:'customer', cancelNote:'Cancelled by customer — full refund of ₹' + o.total + ' will be processed within 3–5 business days.'});
+    const t = ts();
+    updateOrder(o.id, {status:'cancelled', cancelledBy:'customer', cancelledAt: t, cancelNote:'Cancelled by customer — full refund of ₹' + o.total + ' will be processed within 3–5 business days.'});
     showToast('Order ' + o.id + ' cancelled. Refund will be processed.');
   };
 
@@ -960,7 +964,6 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:8,marginBottom:16}}>
                     <div>
                       <span style={{fontWeight:800,fontSize:16,color:'var(--g800)'}}>{o.id}</span>
-                      <span style={{fontSize:12,color:'var(--muted)',marginLeft:8}}>{o.date}</span>
                       {isCancelled && <span style={{marginLeft:8,background:'#fee2e2',color:'#991b1b',fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:10}}>CANCELLED</span>}
                       {o.deliveryTime && !isCancelled && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
                     </div>
@@ -970,6 +973,25 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
                         <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'5px 12px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice PDF</button>
                       )}
                     </div>
+                  </div>
+
+                  {/* Timestamp Timeline */}
+                  <div style={{background:'var(--g50)',borderRadius:9,padding:'12px 14px',marginBottom:14,border:'1px solid var(--border)'}}>
+                    <div style={{fontSize:11,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.8,marginBottom:8}}>Order Timeline</div>
+                    {[
+                      ['📋','Order Placed',       o.orderDateTime],
+                      ['📸','Payment Sent',       o.screenshotAt],
+                      ['✅','Payment Verified',   o.verifiedAt],
+                      ['🚚','Out for Delivery',   o.outForDeliveryAt],
+                      ['🎉','Delivered',          o.deliveredAt],
+                      ['🚫','Cancelled',          o.cancelledAt],
+                    ].filter(([,, t])=>t).map(([icon,label,t])=>(
+                      <div key={label} style={{display:'flex',gap:10,alignItems:'baseline',padding:'3px 0'}}>
+                        <span style={{fontSize:12,minWidth:18}}>{icon}</span>
+                        <span style={{fontSize:12,color:'var(--muted)',minWidth:130}}>{label}</span>
+                        <span style={{fontSize:12,fontWeight:600,color:'var(--g700)'}}>{t}</span>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Progress Bar — hidden when cancelled */}
@@ -1139,25 +1161,29 @@ function exportToExcel(orders, users, inventory) {
 
   /* ── SHEET 1: Orders ──────────────────────────── */
   const orderRows = orders.map(o => ({
-    'Order ID':           o.id,
-    'Order Date & Time':  fmt(o.orderDateTime || o.date),
-    'Customer Name':      fmt(o.cname),
-    'Client ID':          fmt(o.cid),
-    'Phone':              fmt(o.phone),
-    'Delivery Address':   fmt(o.address),
-    'Items Ordered':      o.items.map(it=>`${it.name} × ${it.qty}`).join(' | '),
-    'Subtotal (₹)':       o.sub  || 0,
-    'Deposit (₹)':        o.dep  || 0,
-    'Total (₹)':          o.total|| 0,
-    'Order Status':       statusLabel[o.status] || o.status,
-    'Payment Proof':      (o.screenshot && o.screenshot.startsWith('data:')) ? 'YES — see Payment Proofs sheet' : o.screenshot==='uploaded'?'Uploaded (legacy)':'Not uploaded',
-    'Scheduled Delivery': fmt(o.deliveryTime),
-    'Delivered At':       fmt(o.deliveredAt),
-    'Cancelled By':       fmt(o.cancelledBy),
-    'Cancellation Note':  fmt(o.cancelNote),
+    'Order ID':                o.id,
+    'Order Date & Time':       fmt(o.orderDateTime || o.date),
+    'Payment Sent At':         fmt(o.screenshotAt),
+    'Verified & Confirmed At': fmt(o.confirmedAt),
+    'Out for Delivery At':     fmt(o.outForDeliveryAt),
+    'Delivered At':            fmt(o.deliveredAt),
+    'Cancelled At':            fmt(o.cancelledAt),
+    'Customer Name':           fmt(o.cname),
+    'Client ID':               fmt(o.cid),
+    'Phone':                   fmt(o.phone),
+    'Delivery Address':        fmt(o.address),
+    'Items Ordered':           o.items.map(it=>`${it.name} × ${it.qty}`).join(' | '),
+    'Subtotal (₹)':            o.sub  || 0,
+    'Deposit (₹)':             o.dep  || 0,
+    'Total (₹)':               o.total|| 0,
+    'Order Status':            statusLabel[o.status] || o.status,
+    'Payment Proof':           (o.screenshot && o.screenshot.startsWith('data:')) ? 'YES — see Payment Proofs sheet' : o.screenshot==='uploaded'?'Uploaded (legacy)':'Not uploaded',
+    'Scheduled Delivery':      fmt(o.deliveryTime),
+    'Cancelled By':            fmt(o.cancelledBy),
+    'Cancellation Note':       fmt(o.cancelNote),
   }));
   const wsOrders = XLSX.utils.json_to_sheet(orderRows.length ? orderRows : [{Note:'No orders yet'}]);
-  wsOrders['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:10},{wch:14},{wch:36},{wch:44},{wch:13},{wch:12},{wch:12},{wch:38},{wch:32},{wch:28},{wch:24},{wch:14},{wch:48}];
+  wsOrders['!cols'] = [{wch:12},{wch:24},{wch:24},{wch:26},{wch:24},{wch:24},{wch:24},{wch:20},{wch:10},{wch:14},{wch:36},{wch:44},{wch:13},{wch:12},{wch:12},{wch:38},{wch:32},{wch:28},{wch:14},{wch:48}];
   XLSX.utils.book_append_sheet(wb, wsOrders, 'Orders');
 
   /* ── SHEET 2: Customers ───────────────────────── */
@@ -1203,21 +1229,25 @@ function exportToExcel(orders, users, inventory) {
   const payRows = orders.map(o=>{
     const paid = ['screenshot','verified','confirmed','out_for_delivery','delivered'].includes(o.status);
     return {
-      'Order ID':           o.id,
-      'Order Date & Time':  fmt(o.orderDateTime || o.date),
-      'Customer Name':      fmt(o.cname),
-      'Client ID':          fmt(o.cid),
-      'Phone':              fmt(o.phone),
-      'Amount (₹)':         o.total||0,
-      'Payment Status':     paid?'Payment Received':o.status==='cancelled'?'Cancelled':'Awaiting Payment',
-      'Verification':       ['verified','confirmed','out_for_delivery','delivered'].includes(o.status)?'Verified ✓':o.status==='screenshot'?'Pending Verification':o.status==='cancelled'?'N/A':'Not Paid Yet',
-      'Screenshot Uploaded':(o.screenshot&&o.screenshot.startsWith('data:'))||o.screenshot==='uploaded'?'Yes':'No',
-      'Proof Location':     (o.screenshot&&o.screenshot.startsWith('data:'))?'See "Payment Proofs" sheet':'—',
-      'Delivered At':       fmt(o.deliveredAt),
+      'Order ID':                o.id,
+      'Order Placed At':         fmt(o.orderDateTime || o.date),
+      'Payment Sent At':         fmt(o.screenshotAt),
+      'Verified & Confirmed At': fmt(o.confirmedAt),
+      'Out for Delivery At':     fmt(o.outForDeliveryAt),
+      'Delivered At':            fmt(o.deliveredAt),
+      'Cancelled At':            fmt(o.cancelledAt),
+      'Customer Name':           fmt(o.cname),
+      'Client ID':               fmt(o.cid),
+      'Phone':                   fmt(o.phone),
+      'Amount (₹)':              o.total||0,
+      'Payment Status':          paid?'Payment Received':o.status==='cancelled'?'Cancelled':'Awaiting Payment',
+      'Verification':            ['verified','confirmed','out_for_delivery','delivered'].includes(o.status)?'Verified ✓':o.status==='screenshot'?'Pending Verification':o.status==='cancelled'?'N/A':'Not Paid Yet',
+      'Screenshot Uploaded':     (o.screenshot&&o.screenshot.startsWith('data:'))||o.screenshot==='uploaded'?'Yes':'No',
+      'Proof Location':          (o.screenshot&&o.screenshot.startsWith('data:'))?'See "Payment Proofs" sheet':'—',
     };
   });
   const wsPay = XLSX.utils.json_to_sheet(payRows.length ? payRows : [{Note:'No payments yet'}]);
-  wsPay['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:10},{wch:14},{wch:13},{wch:22},{wch:26},{wch:20},{wch:28},{wch:24}];
+  wsPay['!cols'] = [{wch:12},{wch:24},{wch:24},{wch:26},{wch:24},{wch:24},{wch:24},{wch:20},{wch:10},{wch:14},{wch:13},{wch:22},{wch:26},{wch:20},{wch:28}];
   XLSX.utils.book_append_sheet(wb, wsPay, 'Payments');
 
   /* ── SHEET 5: Payment Proofs (with clickable links) ── */
@@ -1302,14 +1332,16 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
 
   const confirmOrder = (id) => {
     const time = delivInp[id] || 'Delivery time to be confirmed';
-    updateOrder(id, {status:'confirmed', deliveryTime: time});
+    const t = ts();
+    updateOrder(id, {status:'confirmed', deliveryTime: time, verifiedAt: t, confirmedAt: t});
     setDelivInp(p=>({...p,[id]:''}));
     showToast('Order ' + id + ' confirmed with delivery: ' + time);
   };
 
   const rejectOrder = (id) => {
     if (!window.confirm('Reject this order? The customer will be notified that payment was not verified. This cannot be undone.')) return;
-    updateOrder(id, {status:'cancelled', cancelledBy:'admin', cancelNote:'Payment could not be verified. Please contact us if you believe this is an error.'});
+    const t = ts();
+    updateOrder(id, {status:'cancelled', cancelledBy:'admin', cancelledAt: t, cancelNote:'Payment could not be verified. Please contact us if you believe this is an error.'});
     showToast('Order ' + id + ' rejected — marked as cancelled.');
   };
 
@@ -1416,13 +1448,36 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                     </div>
                     <div style={{fontWeight:600,fontSize:13,color:'var(--text)',marginTop:4}}>{o.cname} · {o.phone}</div>
                     <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>📍 {o.address||'No address'}</div>
-                    <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>Date: {o.date}</div>
                   </div>
                   <div style={{textAlign:'right'}}>
                     <div style={{fontSize:20,fontWeight:800,color:'var(--g600)'}}>₹{o.total}</div>
                     {o.screenshot && o.screenshot.startsWith('data:') && (
                     <ScreenshotThumb src={o.screenshot} name={o.screenshotName}/>
                   )}
+                  </div>
+                </div>
+
+                {/* Timestamp Timeline */}
+                <div style={{background:'var(--g50)',borderRadius:8,padding:'10px 14px',marginBottom:12,border:'1px solid var(--border)'}}>
+                  <div style={{fontSize:10,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.8,marginBottom:6}}>Timeline</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'2px 0',flexDirection:'column'}}>
+                    {[
+                      ['📋','Order Placed',       o.orderDateTime],
+                      ['📸','Payment Sent',       o.screenshotAt],
+                      ['✅','Verified & Confirmed',o.confirmedAt],
+                      ['🚚','Out for Delivery',   o.outForDeliveryAt],
+                      ['🎉','Delivered',          o.deliveredAt],
+                      ['🚫','Cancelled',          o.cancelledAt],
+                    ].filter(([,,t])=>t).map(([icon,label,t])=>(
+                      <div key={label} style={{display:'flex',gap:8,alignItems:'baseline'}}>
+                        <span style={{fontSize:11,minWidth:18}}>{icon}</span>
+                        <span style={{fontSize:11,color:'var(--muted)',minWidth:150}}>{label}</span>
+                        <span style={{fontSize:11,fontWeight:700,color:'var(--g700)'}}>{t}</span>
+                      </div>
+                    ))}
+                    {![o.orderDateTime,o.screenshotAt,o.confirmedAt,o.outForDeliveryAt,o.deliveredAt,o.cancelledAt].some(Boolean) && (
+                      <span style={{fontSize:11,color:'var(--muted)'}}>Date: {o.date} · No detailed timestamps (legacy order)</span>
+                    )}
                   </div>
                 </div>
 
@@ -1462,13 +1517,13 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                 {/* Actions by status */}
                 {o.status==='confirmed' && (
                   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                    <button className="btn-success" onClick={()=>{updateOrder(o.id,{status:'out_for_delivery'});showToast(o.id+' marked as Out for Delivery');}}>🚚 Mark Out for Delivery</button>
+                    <button className="btn-success" onClick={()=>{const t=ts();updateOrder(o.id,{status:'out_for_delivery',outForDeliveryAt:t});showToast(o.id+' marked as Out for Delivery');}}>🚚 Mark Out for Delivery</button>
                     <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Download Invoice</button>
                   </div>
                 )}
                 {o.status==='out_for_delivery' && (
                   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                    <button className="btn-success" onClick={()=>{const dt=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});updateOrder(o.id,{status:'delivered',deliveredAt:dt});showToast(o.id+' marked as Delivered!');}}>✓ Mark as Delivered</button>
+                    <button className="btn-success" onClick={()=>{const t=ts();updateOrder(o.id,{status:'delivered',deliveredAt:t});showToast(o.id+' marked as Delivered!');}}>✓ Mark as Delivered</button>
                     <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice</button>
                   </div>
                 )}
