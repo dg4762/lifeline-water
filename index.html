@@ -544,11 +544,43 @@ function Home({setPage, user, logout, showToast, inventory={p1:999,p2:999,p3:999
    AUTH PAGE
    ============================================= */
 function Auth({login, register, setPage}) {
-  const [mode, setMode]     = useState('login');
-  const [form, setForm]     = useState({name:'',email:'',password:'',phone:'',address:''});
-  const [err, setErr]       = useState('');
-  const [loading, setLoading] = useState(false);
+  const [mode,      setMode]    = useState('login');
+  const [form,      setForm]    = useState({name:'',email:'',password:'',phone:'',address:''});
+  const [err,       setErr]     = useState('');
+  const [loading,   setLoading] = useState(false);
+  const [showForm,  setShowForm] = useState(false);
+  const [remembered, setRemembered] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ll_remembered') || '[]'); } catch { return []; }
+  });
+
   const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  /* Save a credential to remembered list */
+  const saveRemembered = (email, password, name) => {
+    const updated = [
+      {email, password, name, savedAt: Date.now()},
+      ...remembered.filter(r=>r.email!==email)
+    ].slice(0, 5); /* keep max 5 accounts per device */
+    localStorage.setItem('ll_remembered', JSON.stringify(updated));
+    setRemembered(updated);
+  };
+
+  const removeRemembered = (email, e) => {
+    e.stopPropagation();
+    const updated = remembered.filter(r=>r.email!==email);
+    localStorage.setItem('ll_remembered', JSON.stringify(updated));
+    setRemembered(updated);
+  };
+
+  const quickLogin = async (r) => {
+    setErr(''); setLoading(true);
+    await new Promise(res=>setTimeout(res,300));
+    if (!login(r.email, r.password)) {
+      setErr('Saved login failed. Please sign in manually.');
+      removeRemembered(r.email, {stopPropagation:()=>{}});
+    }
+    setLoading(false);
+  };
 
   const handle = async () => {
     setErr(''); setLoading(true);
@@ -560,14 +592,22 @@ function Auth({login, register, setPage}) {
       if (form.phone.length !== 10 || !/^\d+$/.test(form.phone)) {
         setErr('Enter a valid 10-digit mobile number.'); setLoading(false); return;
       }
-      register(form);
+      await register(form);
+      saveRemembered(form.email, form.password, form.name);
     } else {
-      if (!login(form.email, form.password)) {
-        setErr('Invalid email or password. Try: raj@example.com / raj123');
+      if (login(form.email, form.password)) {
+        saveRemembered(form.email, form.password, form.name || form.email.split('@')[0]);
+      } else {
+        setErr('Invalid email or password.');
       }
     }
     setLoading(false);
   };
+
+  const initials = name => name ? name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+
+  /* Show quick-login cards if remembered accounts exist and not in register mode */
+  const showQuickLogin = remembered.length > 0 && mode === 'login' && !showForm;
 
   return (
     <div style={{minHeight:'100vh',background:'linear-gradient(145deg,#0d2e0d,#235c23)',display:'flex',flexDirection:'column'}}>
@@ -578,56 +618,126 @@ function Auth({login, register, setPage}) {
         </div>
         <span style={{color:'#a8d8a8',fontSize:13,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setPage('home')}>← Back to Home</span>
       </nav>
+
       <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
         <div className="card" style={{width:'100%',maxWidth:420,padding:38}}>
           <div style={{textAlign:'center',marginBottom:26}}>
             <div style={{fontSize:36,marginBottom:8}}>💧</div>
-            <h2 style={{fontFamily:'Playfair Display',fontSize:28,fontWeight:800,color:'var(--g800)'}}>{mode==='register'?'Create Account':'Welcome Back'}</h2>
-            <p style={{color:'var(--muted)',fontSize:13,marginTop:5}}>{mode==='register'?'Free account — start ordering in minutes':'Sign in to track and manage your orders'}</p>
+            <h2 style={{fontFamily:'Playfair Display',fontSize:28,fontWeight:800,color:'var(--g800)'}}>
+              {mode==='register' ? 'Create Account' : showQuickLogin ? 'Welcome Back' : 'Sign In'}
+            </h2>
+            <p style={{color:'var(--muted)',fontSize:13,marginTop:5}}>
+              {mode==='register' ? 'Free account — start ordering in minutes'
+               : showQuickLogin ? 'Choose your account to sign in instantly'
+               : 'Sign in to track and manage your orders'}
+            </p>
           </div>
 
-          {mode==='register' && (
-            <div className="fg"><label>Full Name *</label>
-              <input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Your full name"/>
+          {/* ── QUICK LOGIN CARDS ── */}
+          {showQuickLogin && (
+            <div>
+              {remembered.map(r=>(
+                <div
+                  key={r.email}
+                  onClick={()=>quickLogin(r)}
+                  style={{display:'flex',alignItems:'center',gap:14,padding:'13px 16px',border:'1.5px solid var(--border)',borderRadius:11,marginBottom:10,cursor:'pointer',background:'var(--g50)',transition:'all .15s',position:'relative'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--g500)';e.currentTarget.style.background='#e8f5e8';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.background='var(--g50)';}}
+                >
+                  <div style={{width:44,height:44,borderRadius:'50%',background:'var(--g600)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:15,flexShrink:0}}>
+                    {initials(r.name)}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:15,color:'var(--g800)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.name}</div>
+                    <div style={{fontSize:12,color:'var(--muted)',marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.email}</div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                    <span style={{fontSize:12,color:'var(--g600)',fontWeight:600}}>Tap to sign in →</span>
+                    <button
+                      onClick={e=>removeRemembered(r.email,e)}
+                      style={{width:24,height:24,borderRadius:'50%',background:'#fee2e2',border:'none',cursor:'pointer',color:'#991b1b',fontSize:13,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}
+                      title="Remove saved account"
+                    >✕</button>
+                  </div>
+                </div>
+              ))}
+
+              {loading && (
+                <div style={{textAlign:'center',padding:'12px 0',color:'var(--muted)',fontSize:13}}>Signing you in…</div>
+              )}
+              {err && <div style={{background:'#fee2e2',color:'var(--danger)',padding:'10px 13px',borderRadius:7,fontSize:13,marginBottom:14,border:'1px solid #fca5a5'}}>{err}</div>}
+
+              <div style={{textAlign:'center',marginTop:18,paddingTop:16,borderTop:'1px solid var(--border)'}}>
+                <span style={{fontSize:13,color:'var(--muted)',cursor:'pointer',textDecoration:'underline'}} onClick={()=>setShowForm(true)}>
+                  Use a different account →
+                </span>
+              </div>
+              <div style={{textAlign:'center',marginTop:10}}>
+                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setShowForm(true);}}>
+                  Staff / Admin Login →
+                </span>
+              </div>
+              <div style={{textAlign:'center',marginTop:10}}>
+                <span style={{color:'var(--g600)',fontSize:13,cursor:'pointer',fontWeight:600}} onClick={()=>{setMode('register');setShowForm(true);}}>
+                  New here? Create Free Account
+                </span>
+              </div>
             </div>
           )}
-          <div className="fg"><label>Email Address *</label>
-            <input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@email.com"/>
-          </div>
-          <div className="fg"><label>Password *</label>
-            <input type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder={mode==='register'?'Choose a strong password':'Your password'}/>
-          </div>
-          {mode==='register' && (
+
+          {/* ── REGULAR FORM ── */}
+          {(!showQuickLogin) && (
             <>
-              <div className="fg"><label>Mobile Number *</label>
-                <input value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="10-digit mobile number" maxLength={10}/>
+              {showForm && mode==='login' && (
+                <button style={{background:'none',border:'none',color:'var(--g600)',fontSize:13,cursor:'pointer',marginBottom:16,fontFamily:'Inter',padding:0,display:'flex',alignItems:'center',gap:4}} onClick={()=>setShowForm(false)}>
+                  ← Back to saved accounts
+                </button>
+              )}
+              {mode==='register' && (
+                <div className="fg"><label>Full Name *</label>
+                  <input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Your full name"/>
+                </div>
+              )}
+              <div className="fg"><label>Email Address *</label>
+                <input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@email.com"/>
               </div>
-              <div className="fg"><label>Delivery Address</label>
-                <textarea value={form.address} onChange={e=>set('address',e.target.value)} style={{resize:'none',height:72}} placeholder="House/flat no., street, area, city"/>
+              <div className="fg"><label>Password *</label>
+                <input type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder={mode==='register'?'Choose a strong password':'Your password'}
+                  onKeyDown={e=>e.key==='Enter'&&handle()}/>
+              </div>
+              {mode==='register' && (
+                <>
+                  <div className="fg"><label>Mobile Number *</label>
+                    <input value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="10-digit mobile number" maxLength={10}/>
+                  </div>
+                  <div className="fg"><label>Delivery Address</label>
+                    <textarea value={form.address} onChange={e=>set('address',e.target.value)} style={{resize:'none',height:72}} placeholder="House/flat no., street, area, city"/>
+                  </div>
+                </>
+              )}
+              {mode==='login' && !showForm && (
+                <div style={{background:'var(--g50)',borderRadius:8,padding:'9px 12px',fontSize:12,color:'var(--muted)',marginBottom:14}}>
+                  Demo account: <b>raj@example.com</b> / <b>raj123</b>
+                </div>
+              )}
+              {err && <div style={{background:'#fee2e2',color:'var(--danger)',padding:'10px 13px',borderRadius:7,fontSize:13,marginBottom:14,border:'1px solid #fca5a5'}}>{err}</div>}
+
+              <button className="btn-primary" style={{width:'100%',padding:14,fontSize:15,borderRadius:9}} onClick={handle} disabled={loading}>
+                {loading ? 'Please wait…' : mode==='register' ? 'Create My Account' : 'Sign In'}
+              </button>
+              <div style={{textAlign:'center',marginTop:18,fontSize:13,color:'var(--muted)'}}>
+                {mode==='register'
+                  ? <>Already have an account? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>{setMode('login');setShowForm(false);}}>Sign In</span></>
+                  : <>New to Lifeline? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>setMode('register')}>Create Free Account</span></>
+                }
+              </div>
+              <div style={{textAlign:'center',marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setMode('login');}}>
+                  Staff / Admin Login →
+                </span>
               </div>
             </>
           )}
-          {mode==='login' && (
-            <div style={{background:'var(--g50)',borderRadius:8,padding:'9px 12px',fontSize:12,color:'var(--muted)',marginBottom:14}}>
-              Demo account: <b>raj@example.com</b> / <b>raj123</b>
-            </div>
-          )}
-          {err && <div style={{background:'#fee2e2',color:'var(--danger)',padding:'10px 13px',borderRadius:7,fontSize:13,marginBottom:14,border:'1px solid #fca5a5'}}>{err}</div>}
-
-          <button className="btn-primary" style={{width:'100%',padding:14,fontSize:15,borderRadius:9}} onClick={handle} disabled={loading}>
-            {loading ? 'Please wait…' : mode==='register' ? 'Create My Account' : 'Sign In'}
-          </button>
-          <div style={{textAlign:'center',marginTop:18,fontSize:13,color:'var(--muted)'}}>
-            {mode==='register'
-              ? <>Already have an account? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>setMode('login')}>Sign In</span></>
-              : <>New to Lifeline? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>setMode('register')}>Create Free Account</span></>
-            }
-          </div>
-          <div style={{textAlign:'center',marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-            <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setMode('login');}}>
-              Staff / Admin Login →
-            </span>
-          </div>
         </div>
       </div>
     </div>
