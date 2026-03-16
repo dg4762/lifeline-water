@@ -351,7 +351,14 @@ function App() {
   };
 
   const updateOrder    = (id, updates)  => db.ref('orders/' + id).update(updates);
-  const updateInventory = (pid, qty)    => db.ref('inventory/' + pid).set(Number(qty));
+  const updateInventory  = (pid, qty) => db.ref('inventory/' + pid).set(Number(qty));
+
+  const restoreInventory = (items) => {
+    items.forEach(it => {
+      const cur = inventory[it.pid] ?? 999;
+      if (cur < 999) db.ref('inventory/' + it.pid).set(cur + it.qty);
+    });
+  };
 
   const logout    = () => { setUser(null); setPage('home'); showToast('Logged out successfully'); };
   const myOrders  = user ? orders.filter(o=>o.cid===user.id) : [];
@@ -369,8 +376,8 @@ function App() {
     <>
       {page==='home'     && <Home     setPage={setPage} user={user} logout={logout} showToast={showToast} inventory={inventory}/>}
       {page==='auth'     && <Auth     login={login} register={register} setPage={setPage}/>}
-      {page==='customer' && user && user.role!=='admin' && <CustomerDash user={user} orders={myOrders} placeOrder={placeOrder} updateOrder={updateOrder} logout={logout} setPage={setPage} showToast={showToast} inventory={inventory}/>}
-      {page==='admin'    && user && user.role==='admin'  && <AdminDash   orders={orders} users={users} updateOrder={updateOrder} logout={logout} showToast={showToast} inventory={inventory} updateInventory={updateInventory}/>}
+      {page==='customer' && user && user.role!=='admin' && <CustomerDash user={user} orders={myOrders} placeOrder={placeOrder} updateOrder={updateOrder} logout={logout} setPage={setPage} showToast={showToast} inventory={inventory} restoreInventory={restoreInventory}/>}
+      {page==='admin'    && user && user.role==='admin'  && <AdminDash   orders={orders} users={users} updateOrder={updateOrder} logout={logout} showToast={showToast} inventory={inventory} updateInventory={updateInventory} restoreInventory={restoreInventory}/>}
       {toast && <div className="toast">✅ {toast}</div>}
     </>
   );
@@ -745,7 +752,7 @@ function Auth({login, register, setPage}) {
 /* =============================================
    CUSTOMER DASHBOARD
    ============================================= */
-function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, showToast, inventory={p1:999,p2:999,p3:999}}) {
+function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, showToast, inventory={p1:999,p2:999,p3:999}, restoreInventory}) {
   const [tab, setTab]       = useState('order');
   const [cart, setCart]     = useState({p1:0,p2:0,p3:0});
   const [addr, setAddr]     = useState(user.address||'');
@@ -781,6 +788,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
   const cancelOrder = (o) => {
     if (!window.confirm('Cancel order ' + o.id + '?\n\nA full refund of ₹' + o.total + ' will be processed. This cannot be undone.')) return;
     const t = ts();
+    restoreInventory(o.items);
     updateOrder(o.id, {status:'cancelled', cancelledBy:'customer', cancelledAt: t, cancelNote:'Cancelled by customer — full refund of ₹' + o.total + ' will be processed within 3–5 business days.'});
     showToast('Order ' + o.id + ' cancelled. Refund will be processed.');
   };
@@ -1320,7 +1328,7 @@ ${proofOrders.length===0?'<div class="empty">No payment screenshots uploaded yet
   XLSX.writeFile(wb, `Lifeline_Water_Report_${today}.xlsx`);
 }
 
-function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1:999,p2:999,p3:999}, updateInventory}) {
+function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1:999,p2:999,p3:999}, updateInventory, restoreInventory}) {
   const [tab,       setTab]       = useState('orders');
   const [filter,    setFilter]    = useState('all');
   const [delivInp,  setDelivInp]  = useState({});
@@ -1338,11 +1346,12 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
     showToast('Order ' + id + ' confirmed with delivery: ' + time);
   };
 
-  const rejectOrder = (id) => {
+  const rejectOrder = (o) => {
     if (!window.confirm('Reject this order? The customer will be notified that payment was not verified. This cannot be undone.')) return;
     const t = ts();
-    updateOrder(id, {status:'cancelled', cancelledBy:'admin', cancelledAt: t, cancelNote:'Payment could not be verified. Please contact us if you believe this is an error.'});
-    showToast('Order ' + id + ' rejected — marked as cancelled.');
+    restoreInventory(o.items);
+    updateOrder(o.id, {status:'cancelled', cancelledBy:'admin', cancelledAt: t, cancelNote:'Payment could not be verified. Please contact us if you believe this is an error.'});
+    showToast('Order ' + o.id + ' rejected — marked as cancelled.');
   };
 
   return (
@@ -1509,7 +1518,7 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                         style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
                       />
                       <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Verify & Confirm</button>
-                      <button onClick={()=>rejectOrder(o.id)} style={{background:'#fee2e2',color:'#991b1b',border:'1.5px solid #fca5a5',borderRadius:7,padding:'9px 16px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Inter'}}>✕ Reject Payment</button>
+                      <button onClick={()=>rejectOrder(o)} style={{background:'#fee2e2',color:'#991b1b',border:'1.5px solid #fca5a5',borderRadius:7,padding:'9px 16px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Inter'}}>✕ Reject Payment</button>
                     </div>
                   </div>
                 )}
