@@ -923,7 +923,13 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
       </nav>
 
       <div style={{maxWidth:1000,margin:'28px auto',padding:'0 16px'}}>
-        {/* Alert Banner */}
+        {/* Alert Banners */}
+        {orders.filter(o=>o.status==='pending').length>0 && (
+          <div style={{background:'#d1fae5',border:'1px solid #6ee7b7',borderRadius:9,padding:'13px 18px',marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}}>
+            <span style={{fontWeight:700,color:'#065f46',fontSize:14}}>🆕 {orders.filter(o=>o.status==='pending').length} new order(s) awaiting payment upload</span>
+            <button style={{background:'#059669',color:'#fff',padding:'7px 16px',borderRadius:7,border:'none',cursor:'pointer',fontSize:13,fontWeight:700,fontFamily:'Inter'}} onClick={()=>{setFilter('pending');setTab('orders');}}>View New Orders →</button>
+          </div>
+        )}
         {needsVerify.length>0 && (
           <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:9,padding:'13px 18px',marginBottom:22,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}}>
             <span style={{fontWeight:700,color:'#92400e',fontSize:14}}>⚡ {needsVerify.length} order(s) awaiting payment verification</span>
@@ -932,13 +938,14 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
         )}
 
         {/* Stats */}
-        <div className="admin-stats" style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:26}}>
+        <div className="admin-stats" style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:12,marginBottom:26}}>
           {[
-            ['All Orders',  orders.length,                                                      'var(--g600)'],
-            ['Unpaid',      orders.filter(o=>o.status==='pending').length,                      '#d97706'],
-            ['Verify',      needsVerify.length,                                                  '#7c3aed'],
-            ['Confirmed',   orders.filter(o=>['confirmed','out_for_delivery'].includes(o.status)).length, '#065f46'],
-            ['Delivered',   orders.filter(o=>o.status==='delivered').length,                    '#14532d'],
+            ['All Orders',  orders.length,                                                                          'var(--g600)'],
+            ['New',         orders.filter(o=>o.status==='pending').length,                                          '#059669'],
+            ['Verify',      needsVerify.length,                                                                     '#7c3aed'],
+            ['Confirmed',   orders.filter(o=>['confirmed','out_for_delivery'].includes(o.status)).length,           '#065f46'],
+            ['Delivered',   orders.filter(o=>o.status==='delivered').length,                                        '#14532d'],
+            ['Cancelled',   orders.filter(o=>o.status==='cancelled').length,                                        '#991b1b'],
           ].map(([l,v,c])=>(
             <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid var(--border)',padding:'14px 10px',textAlign:'center',boxShadow:'0 1px 6px rgba(0,0,0,0.05)'}}>
               <div style={{fontSize:24,fontWeight:800,color:c}}>{v}</div>
@@ -958,9 +965,9 @@ function AdminDash({orders, users, updateOrder, logout, showToast}) {
         {tab==='orders' && (
           <div>
             <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
-              {[['all','All'],['screenshot','Needs Verify'],['confirmed','Confirmed'],['out_for_delivery','Out for Delivery'],['delivered','Delivered']].map(([k,l])=>(
+              {[['all','All'],['pending','🆕 New Orders'],['screenshot','Needs Verify'],['confirmed','Confirmed'],['out_for_delivery','Out for Delivery'],['delivered','Delivered'],['cancelled','Cancelled']].map(([k,l])=>(
                 <button key={k} onClick={()=>setFilter(k)} style={{padding:'6px 14px',borderRadius:20,border:'1px solid '+(filter===k?'var(--g500)':'var(--border)'),background:filter===k?'var(--g50)':'#fff',color:filter===k?'var(--g700)':'var(--muted)',fontSize:12,cursor:'pointer',fontWeight:filter===k?700:400,fontFamily:'Inter',transition:'all .15s'}}>
-                  {l}
+                  {l}{k==='pending' && orders.filter(o=>o.status==='pending').length>0 ? ` (${orders.filter(o=>o.status==='pending').length})` : ''}
                 </button>
               ))}
             </div>
