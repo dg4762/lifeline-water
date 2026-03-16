@@ -13,6 +13,7 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -332,8 +333,12 @@ function App() {
     const count = snap.val() || 3;
     const id = 'ORD-' + String(count).padStart(3,'0');
     await db.ref('meta/oidCounter').set(count + 1);
+    const now = new Date();
     const no = { id, cid:user.id, cname:user.name, phone:user.phone||'', ...od,
-      status:'pending', deliveryTime:'', date:new Date().toISOString().slice(0,10) };
+      status:'pending', deliveryTime:'',
+      date: now.toISOString().slice(0,10),
+      orderDateTime: now.toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true})
+    };
     await db.ref('orders/' + id).set(no);
     /* Deduct inventory */
     od.items.forEach(it => {
@@ -1008,6 +1013,177 @@ function ScreenshotThumb({src, name}) {
 /* =============================================
    ADMIN DASHBOARD
    ============================================= */
+/* =============================================
+   EXCEL EXPORT
+   ============================================= */
+function exportToExcel(orders, users, inventory) {
+  const XLSX = window.XLSX;
+  if (!XLSX) { alert('Excel library not loaded. Please refresh and try again.'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  /* helpers */
+  const statusLabel = {
+    pending:'Order Placed (Awaiting Payment)', screenshot:'Payment Sent (Awaiting Verification)',
+    verified:'Payment Verified', confirmed:'Order Confirmed',
+    out_for_delivery:'Out for Delivery', delivered:'Delivered', cancelled:'Cancelled'
+  };
+  const stockStatus = s => s===0?'OUT OF STOCK':s<=50?'LOW STOCK':s>=999?'Untracked (Unlimited)':'In Stock';
+  const fmt = v => v || '—';
+
+  /* ── SHEET 1: Orders ──────────────────────────── */
+  const orderRows = orders.map(o => ({
+    'Order ID':           o.id,
+    'Order Date & Time':  fmt(o.orderDateTime || o.date),
+    'Customer Name':      fmt(o.cname),
+    'Client ID':          fmt(o.cid),
+    'Phone':              fmt(o.phone),
+    'Delivery Address':   fmt(o.address),
+    'Items Ordered':      o.items.map(it=>`${it.name} × ${it.qty}`).join(' | '),
+    'Subtotal (₹)':       o.sub  || 0,
+    'Deposit (₹)':        o.dep  || 0,
+    'Total (₹)':          o.total|| 0,
+    'Order Status':       statusLabel[o.status] || o.status,
+    'Payment Proof':      (o.screenshot && o.screenshot.startsWith('data:')) ? 'YES — see Payment Proofs sheet' : o.screenshot==='uploaded'?'Uploaded (legacy)':'Not uploaded',
+    'Scheduled Delivery': fmt(o.deliveryTime),
+    'Delivered At':       fmt(o.deliveredAt),
+    'Cancelled By':       fmt(o.cancelledBy),
+    'Cancellation Note':  fmt(o.cancelNote),
+  }));
+  const wsOrders = XLSX.utils.json_to_sheet(orderRows.length ? orderRows : [{Note:'No orders yet'}]);
+  wsOrders['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:10},{wch:14},{wch:36},{wch:44},{wch:13},{wch:12},{wch:12},{wch:38},{wch:32},{wch:28},{wch:24},{wch:14},{wch:48}];
+  XLSX.utils.book_append_sheet(wb, wsOrders, 'Orders');
+
+  /* ── SHEET 2: Customers ───────────────────────── */
+  const custRows = users.map(u => {
+    const ords = orders.filter(o=>o.cid===u.id);
+    return {
+      'Client ID':        u.id,
+      'Full Name':        u.name,
+      'Email':            u.email,
+      'Phone':            fmt(u.phone),
+      'Delivery Address': fmt(u.address),
+      'Total Orders':     ords.length,
+      'Delivered':        ords.filter(o=>o.status==='delivered').length,
+      'Active/Pending':   ords.filter(o=>!['delivered','cancelled'].includes(o.status)).length,
+      'Cancelled':        ords.filter(o=>o.status==='cancelled').length,
+      'Total Spent (₹)':  ords.filter(o=>o.status!=='cancelled').reduce((a,o)=>a+(o.total||0),0),
+    };
+  });
+  const wsCust = XLSX.utils.json_to_sheet(custRows.length ? custRows : [{Note:'No customers yet'}]);
+  wsCust['!cols'] = [{wch:10},{wch:22},{wch:28},{wch:14},{wch:38},{wch:13},{wch:11},{wch:14},{wch:11},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsCust, 'Customers');
+
+  /* ── SHEET 3: Inventory ───────────────────────── */
+  const PRODS = [{id:'p1',name:'1L Bottle Carton',detail:'1L × 12 Bottles',price:80,unit:'carton'},{id:'p2',name:'200ml Bottle Pallet',detail:'200ml × 24 Bottles',price:120,unit:'pallet'},{id:'p3',name:'20L Refillable Jar',detail:'20L Reusable Jar',price:50,unit:'jar'}];
+  const invRows = PRODS.map(p=>{
+    const s = inventory[p.id]??999;
+    return {
+      'Product ID':   p.id,
+      'Product Name': p.name,
+      'Details':      p.detail,
+      'Price (₹)':    p.price,
+      'Unit':         p.unit,
+      'Stock Qty':    s>=999?'Untracked':s,
+      'Stock Status': stockStatus(s),
+      'Important Note': '⚠ Stock can ONLY be changed by Admin via the website. Do not edit this column manually.',
+    };
+  });
+  const wsInv = XLSX.utils.json_to_sheet(invRows);
+  wsInv['!cols'] = [{wch:12},{wch:22},{wch:22},{wch:10},{wch:8},{wch:12},{wch:24},{wch:58}];
+  XLSX.utils.book_append_sheet(wb, wsInv, 'Inventory');
+
+  /* ── SHEET 4: Payments ────────────────────────── */
+  const payRows = orders.map(o=>{
+    const paid = ['screenshot','verified','confirmed','out_for_delivery','delivered'].includes(o.status);
+    return {
+      'Order ID':           o.id,
+      'Order Date & Time':  fmt(o.orderDateTime || o.date),
+      'Customer Name':      fmt(o.cname),
+      'Client ID':          fmt(o.cid),
+      'Phone':              fmt(o.phone),
+      'Amount (₹)':         o.total||0,
+      'Payment Status':     paid?'Payment Received':o.status==='cancelled'?'Cancelled':'Awaiting Payment',
+      'Verification':       ['verified','confirmed','out_for_delivery','delivered'].includes(o.status)?'Verified ✓':o.status==='screenshot'?'Pending Verification':o.status==='cancelled'?'N/A':'Not Paid Yet',
+      'Screenshot Uploaded':(o.screenshot&&o.screenshot.startsWith('data:'))||o.screenshot==='uploaded'?'Yes':'No',
+      'Proof Location':     (o.screenshot&&o.screenshot.startsWith('data:'))?'See "Payment Proofs" sheet':'—',
+      'Delivered At':       fmt(o.deliveredAt),
+    };
+  });
+  const wsPay = XLSX.utils.json_to_sheet(payRows.length ? payRows : [{Note:'No payments yet'}]);
+  wsPay['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:10},{wch:14},{wch:13},{wch:22},{wch:26},{wch:20},{wch:28},{wch:24}];
+  XLSX.utils.book_append_sheet(wb, wsPay, 'Payments');
+
+  /* ── SHEET 5: Payment Proofs (with clickable links) ── */
+  const proofOrders = orders.filter(o=>o.screenshot&&o.screenshot.startsWith('data:'));
+
+  /* Build HTML page with all proof images + clickable links */
+  const proofHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lifeline Water — Payment Proofs</title>
+<style>body{font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;background:#f4faf4}
+h1{color:#1a3d1a;margin-bottom:6px}p.sub{color:#5a7a5a;margin-bottom:28px}
+.proof-card{background:#fff;border:1px solid #c8e6c8;border-radius:10px;padding:20px;margin-bottom:24px}
+.proof-card h3{color:#1a3d1a;margin-bottom:8px}.meta{font-size:13px;color:#5a7a5a;margin-bottom:14px}
+.meta span{display:inline-block;margin-right:20px}.proof-card img{max-width:100%;border-radius:6px;border:1px solid #c8e6c8}
+a.btn{display:inline-block;margin-top:12px;background:#2d7a2d;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700}
+.empty{text-align:center;padding:60px;color:#5a7a5a}</style></head><body>
+<h1>💧 Lifeline Water — Payment Proofs</h1>
+<p class="sub">Generated: ${new Date().toLocaleString('en-IN')} · Total proofs: ${proofOrders.length}</p>
+${proofOrders.length===0?'<div class="empty">No payment screenshots uploaded yet.</div>':
+  proofOrders.map(o=>`<div class="proof-card">
+  <h3>Order ${o.id} — ₹${o.total}</h3>
+  <div class="meta">
+    <span>👤 ${o.cname} (${o.cid})</span>
+    <span>📅 ${o.orderDateTime||o.date||''}</span>
+    <span>📱 ${o.phone||'—'}</span>
+    <span>📦 ${statusLabel[o.status]||o.status}</span>
+    ${o.deliveredAt?`<span>✅ Delivered: ${o.deliveredAt}</span>`:''}
+  </div>
+  <div><b>Items:</b> ${o.items.map(it=>it.name+' × '+it.qty).join(', ')}</div>
+  <div style="margin-top:8px"><b>File:</b> ${o.screenshotName||'screenshot'}</div>
+  <img src="${o.screenshot}" alt="Payment proof for ${o.id}"/>
+  <br/><a class="btn" href="${o.screenshot}" download="${o.id}_payment_proof${o.screenshotName?'.'+o.screenshotName.split('.').pop():''}">⬇ Download Proof</a>
+</div>`).join('')}
+</body></html>`;
+
+  /* Save HTML as a Blob and create an object URL — write URL into the sheet */
+  const blob = new Blob([proofHtml], {type:'text/html'});
+  const blobUrl = URL.createObjectURL(blob);
+
+  /* Proof summary rows */
+  const proofRows = proofOrders.length ? proofOrders.map(o=>({
+    'Order ID':           o.id,
+    'Order Date & Time':  fmt(o.orderDateTime||o.date),
+    'Customer Name':      fmt(o.cname),
+    'Amount (₹)':         o.total||0,
+    'Status':             statusLabel[o.status]||o.status,
+    'Screenshot File':    fmt(o.screenshotName),
+    'VIEW ALL PROOFS →':  blobUrl,
+  })) : [{Note:'No payment screenshots uploaded yet','VIEW ALL PROOFS →':blobUrl}];
+
+  const wsProof = XLSX.utils.json_to_sheet(proofRows);
+
+  /* Make the blob URL column a hyperlink in every row */
+  const linkCol = 'G';
+  proofRows.forEach((_,i)=>{
+    const cellRef = linkCol+(i+2);
+    if (wsProof[cellRef]) {
+      wsProof[cellRef].l = {Target: blobUrl, Tooltip:'Click to open all payment proofs in browser'};
+      wsProof[cellRef].v = '🔗 Click here to view all payment proof images';
+      wsProof[cellRef].s = {font:{color:{rgb:'0563C1'},underline:true}};
+    }
+  });
+
+  wsProof['!cols'] = [{wch:12},{wch:24},{wch:20},{wch:12},{wch:28},{wch:26},{wch:44}];
+  XLSX.utils.book_append_sheet(wb, wsProof, 'Payment Proofs');
+
+  /* Also auto-open the proofs HTML page */
+  if (proofOrders.length > 0) window.open(blobUrl, '_blank');
+
+  /* ── Download ── */
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Lifeline_Water_Report_${today}.xlsx`);
+}
+
 function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1:999,p2:999,p3:999}, updateInventory}) {
   const [tab,       setTab]       = useState('orders');
   const [filter,    setFilter]    = useState('all');
@@ -1043,7 +1219,14 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
           </div>
           <span style={{background:'var(--lime)',color:'var(--g800)',fontSize:10,fontWeight:800,padding:'3px 10px',borderRadius:10,marginLeft:6}}>STAFF</span>
         </div>
-        <button style={{background:'rgba(255,255,255,0.08)',color:'#c8e6c8',padding:'7px 16px',border:'1px solid rgba(255,255,255,0.15)',borderRadius:7,cursor:'pointer',fontSize:13,fontFamily:'Inter'}} onClick={logout}>Logout</button>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <button
+            style={{background:'#059669',color:'#fff',padding:'7px 16px',border:'none',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:700,fontFamily:'Inter',display:'flex',alignItems:'center',gap:6}}
+            onClick={()=>exportToExcel(orders, users, inventory)}
+            title="Export all data to Excel"
+          >📊 Export Excel</button>
+          <button style={{background:'rgba(255,255,255,0.08)',color:'#c8e6c8',padding:'7px 16px',border:'1px solid rgba(255,255,255,0.15)',borderRadius:7,cursor:'pointer',fontSize:13,fontFamily:'Inter'}} onClick={logout}>Logout</button>
+        </div>
       </nav>
 
       <div style={{maxWidth:1000,margin:'28px auto',padding:'0 16px'}}>
@@ -1091,10 +1274,16 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
         </div>
 
         {/* Tabs */}
-        <div style={{display:'flex',gap:8,marginBottom:22}}>
-          {[['orders','📋 Orders'],['inventory','📦 Inventory'],['clients','👥 Clients']].map(([k,l])=>(
-            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
-          ))}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22,flexWrap:'wrap',gap:10}}>
+          <div style={{display:'flex',gap:8}}>
+            {[['orders','📋 Orders'],['inventory','📦 Inventory'],['clients','👥 Clients']].map(([k,l])=>(
+              <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
+            ))}
+          </div>
+          <button
+            style={{background:'#059669',color:'#fff',padding:'9px 20px',border:'none',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,fontFamily:'Inter',display:'flex',alignItems:'center',gap:7,boxShadow:'0 2px 8px rgba(5,150,105,0.25)'}}
+            onClick={()=>exportToExcel(orders,users,inventory)}
+          >📊 Export to Excel</button>
         </div>
 
         {/* ORDERS TAB */}
@@ -1173,7 +1362,7 @@ function AdminDash({orders, users, updateOrder, logout, showToast, inventory={p1
                 )}
                 {o.status==='out_for_delivery' && (
                   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                    <button className="btn-success" onClick={()=>{updateOrder(o.id,{status:'delivered'});showToast(o.id+' marked as Delivered!');}}>✓ Mark as Delivered</button>
+                    <button className="btn-success" onClick={()=>{const dt=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});updateOrder(o.id,{status:'delivered',deliveredAt:dt});showToast(o.id+' marked as Delivered!');}}>✓ Mark as Delivered</button>
                     <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice</button>
                   </div>
                 )}
