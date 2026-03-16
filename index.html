@@ -794,7 +794,7 @@ function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, s
         <div className="dash-stats" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:24}}>
           {[
             ['Total Orders', orders.length, 'var(--g600)'],
-            ['Active', orders.filter(o=>o.status!=='delivered').length, '#d97706'],
+            ['Active', orders.filter(o=>!['delivered','cancelled'].includes(o.status)).length, '#d97706'],
             ['Delivered', orders.filter(o=>o.status==='delivered').length, '#14532d'],
           ].map(([l,v,c])=>(
             <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid var(--border)',padding:'16px',textAlign:'center',boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
