@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lifeline Packaged Drinking Water</title>
+<meta name="description" content="Pure, safe, ISI-certified packaged drinking water delivered to your door across Delhi NCR."/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💧</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:#f4faf4;color:#1a2e1a;min-height:100vh}
+:root{
+  --g900:#0a1f0a;--g800:#1a3d1a;--g700:#235c23;--g600:#2d7a2d;
+  --g500:#3a9a3a;--g400:#4db84d;--g300:#7dd17d;--g200:#b3e8b3;
+  --g100:#d9f5d9;--g50:#edfaed;
+  --lime:#a8e063;--white:#ffffff;--pale:#f4faf4;
+  --text:#1a2e1a;--muted:#5a7a5a;--border:#c8e6c8;
+  --warn:#d97706;--danger:#dc2626;--info:#1d6fa4;
+  --radius:12px;--shadow:0 2px 20px rgba(10,60,10,0.09);
+}
+input,select,textarea{font-family:'Inter',sans-serif;font-size:14px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--text);width:100%;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--g500);box-shadow:0 0 0 3px rgba(58,154,58,0.12)}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;border-radius:8px;font-size:14px;font-weight:500;transition:all .15s;line-height:1}
+.btn-primary{background:var(--g600);color:#fff;padding:11px 24px}
+.btn-primary:hover{background:var(--g700);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-outline{background:transparent;color:var(--g600);padding:10px 22px;border:1.5px solid var(--g500)}
+.btn-outline:hover{background:var(--g50)}
+.btn-ghost{background:transparent;color:var(--muted);padding:9px 16px;border:1.5px solid var(--border)}
+.btn-ghost:hover{background:var(--g50);border-color:var(--g300)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-danger{background:#fee2e2;color:var(--danger);border:1px solid #fca5a5;padding:7px 14px;font-size:12px}
+.btn-success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:7px 14px;font-size:12px}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow)}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px}
+.b-pending{background:#fef3c7;color:#92400e}
+.b-screenshot{background:#dbeafe;color:#1e40af}
+.b-verified{background:#d1fae5;color:#065f46}
+.b-confirmed{background:#e9d5ff;color:#5b21b6}
+.b-out{background:#fef9c3;color:#854d0e}
+.b-delivered{background:#dcfce7;color:#14532d}
+.b-cancelled{background:#fee2e2;color:#991b1b}
+label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fg{margin-bottom:16px}
+.tab-btn{padding:9px 18px;border-radius:8px;border:1.5px solid;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.tab-btn.active{border-color:var(--g500);background:var(--g600);color:#fff;font-weight:600}
+.tab-btn.inactive{border-color:var(--border);background:#fff;color:var(--muted);font-weight:400}
+.tab-btn.inactive:hover{background:var(--g50);border-color:var(--g300)}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--g800);color:#fff;padding:14px 20px;border-radius:10px;font-size:14px;box-shadow:0 4px 24px rgba(0,0,0,0.2);z-index:9999;animation:slideup .3s ease;max-width:320px}
+@keyframes slideup{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.hero-wave{position:absolute;bottom:-1px;left:0;right:0;height:60px;background:#f4faf4;clip-path:ellipse(55% 100% at 50% 100%)}
+.progress-bar{display:flex;align-items:center;margin-bottom:20px;overflow-x:auto;padding-bottom:6px}
+.progress-step{display:flex;flex-direction:column;align-items:center;min-width:72px}
+.progress-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .3s}
+.progress-dot.done{background:var(--g500);color:#fff}
+.progress-dot.active{background:var(--g500);color:#fff;box-shadow:0 0 0 4px var(--g100)}
+.progress-dot.future{background:#e5e7eb;color:#9ca3af}
+.progress-line{flex:1;height:2px;margin:0 3px;margin-bottom:20px;min-width:12px;transition:background .3s}
+.progress-line.done{background:var(--g400)}
+.progress-line.future{background:#e5e7eb}
+.progress-label{font-size:9px;margin-top:5px;text-align:center;line-height:1.3;max-width:66px}
+@media(max-width:640px){
+  h1{font-size:36px!important}
+  .hero-btns{flex-direction:column!important;align-items:stretch!important}
+  .features-grid{grid-template-columns:1fr!important}
+  .products-grid{grid-template-columns:1fr 1fr!important}
+  .stats-grid{grid-template-columns:1fr 1fr!important}
+  .howit-grid{grid-template-columns:1fr!important}
+  .admin-stats{grid-template-columns:repeat(3,1fr)!important}
+  .dash-stats{grid-template-columns:1fr 1fr!important}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+/* =============================================
+   LIFELINE PACKAGED DRINKING WATER
+   Single-file React App — GitHub Pages Ready
+   ============================================= */
+
+const {useState, useRef, useEffect} = React;
+const {jsPDF} = window.jspdf || {};
+
+/* ---------- DATA ---------- */
+const PRODUCTS = [
+  { id:'p1', name:'1L Bottle Carton', detail:'1 Litre × 12 Bottles', price:80,  deposit:0,   unit:'carton', img:'🧴', desc:'Perfect for daily home & office hydration' },
+  { id:'p2', name:'200ml Cup Pallet', detail:'200ml × 24 Cups',       price:120, deposit:0,   unit:'pallet', img:'🥤', desc:'Great for events, canteens & functions'   },
+  { id:'p3', name:'20L Refillable Jar',detail:'20 Litre Reusable Jar',price:50,  deposit:100, unit:'jar',    img:'🪣', desc:'Best value — ₹100 deposit refunded on return' },
+];
+
+const STATUS_ORDER = ['pending','screenshot','verified','confirmed','out_for_delivery','delivered'];
+const STATUS_LABELS = {
+  pending:'Order Placed', screenshot:'Payment Sent',
+  verified:'Payment Verified', confirmed:'Order Confirmed',
+  out_for_delivery:'Out for Delivery', delivered:'Delivered'
+};
+
+/* ---------- PERSISTENT STORE (localStorage) ---------- */
+const load = (key, def) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch{ return def; } };
+const save = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+
+/* ---------- PDF INVOICE ---------- */
+function generateInvoice(order) {
+  if (!jsPDF) { alert('PDF library failed to load. Please refresh.'); return; }
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210, M = 18;
+  // Header
+  doc.setFillColor(45,122,45); doc.rect(0,0,W,40,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(24);
+  doc.text('Lifeline', M, 17);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('PACKAGED DRINKING WATER', M, 24);
+  doc.setFontSize(7.5);
+  doc.text('FSSAI Lic: 12315004000753  |  lifeline.water@gmail.com  |  +91 98765 43210  |  Delhi NCR', M, 31);
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('TAX INVOICE', W-M, 15, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Invoice No: ' + order.id, W-M, 22, {align:'right'});
+  doc.text('Date: ' + order.date, W-M, 29, {align:'right'});
+  doc.text('Status: ' + (STATUS_LABELS[order.status]||order.status), W-M, 36, {align:'right'});
+  // Bill To
+  doc.setTextColor(26,46,26);
+  doc.setFillColor(237,250,237); doc.setDrawColor(200,230,200);
+  doc.rect(M, 46, W-M*2, 30, 'FD');
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(45,122,45);
+  doc.text('BILL TO', M+4, 54);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(26,46,26);
+  doc.text(order.cname || 'Customer', M+4, 61);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  doc.text('Client ID: ' + order.cid + '   |   Phone: ' + (order.phone||'—'), M+4, 68);
+  const addrLines = doc.splitTextToSize(order.address || 'Address not provided', W-M*2-8);
+  doc.text(addrLines.slice(0,2), M+4, 74);
+  // Table
+  const ty = 83;
+  doc.setFillColor(45,122,45); doc.rect(M, ty, W-M*2, 8, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('PRODUCT', M+3, ty+5.5);
+  doc.text('QTY', 112, ty+5.5);
+  doc.text('RATE', 128, ty+5.5);
+  doc.text('DEPOSIT', 150, ty+5.5);
+  doc.text('AMOUNT', W-M-2, ty+5.5, {align:'right'});
+  let ry = ty + 8;
+  doc.setTextColor(26,46,26);
+  (order.items||[]).forEach((it, i) => {
+    doc.setFillColor(i%2===0?244:255, i%2===0?250:255, i%2===0?244:255);
+    doc.rect(M, ry, W-M*2, 9, 'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text(it.name, M+3, ry+6);
+    doc.text(String(it.qty), 113, ry+6);
+    doc.text('Rs.' + it.price, 128, ry+6);
+    doc.text(it.deposit ? 'Rs.' + (it.deposit * it.qty) : '—', 151, ry+6);
+    doc.setFont('helvetica','bold');
+    doc.text('Rs.' + ((it.price + (it.deposit||0)) * it.qty), W-M-2, ry+6, {align:'right'});
+    ry += 9;
+  });
+  // Totals
+  ry += 5;
+  doc.setDrawColor(200,230,200); doc.line(M, ry, W-M, ry); ry += 7;
+  const rows = [
+    ['Subtotal (water)', 'Rs.' + order.sub],
+    ...(order.dep > 0 ? [['Security Deposit (jars — refundable)', 'Rs.' + order.dep]] : []),
+    ['TOTAL PAYABLE', 'Rs.' + order.total],
+  ];
+  rows.forEach(([l, v], i) => {
+    const last = i === rows.length - 1;
+    doc.setFont('helvetica', last ? 'bold' : 'normal');
+    doc.setFontSize(last ? 11 : 9);
+    doc.setTextColor(last ? 45 : 90, last ? 122 : 122, last ? 45 : 90);
+    doc.text(l, 115, ry); doc.text(v, W-M-2, ry, {align:'right'});
+    ry += last ? 0 : 7;
+  });
+  if (order.dep > 0) {
+    ry += 10;
+    doc.setFontSize(7.5); doc.setTextColor(90,122,90); doc.setFont('helvetica','italic');
+    doc.text('* Security deposit of Rs.100 per jar is fully refundable upon return of the empty jar in good condition.', M, ry);
+    ry += 6;
+  } else { ry += 10; }
+  // Delivery
+  if (order.deliveryTime) {
+    doc.setFillColor(209,250,229); doc.rect(M, ry, W-M*2, 10, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(6,95,70);
+    doc.text('Delivery: ' + order.deliveryTime, M+4, ry+6.5);
+    ry += 16;
+  }
+  // Footer
+  doc.setFillColor(45,122,45); doc.rect(0,277,W,20,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Thank you for choosing Lifeline Packaged Drinking Water.', W/2, 284, {align:'center'});
+  doc.text('This is a computer-generated invoice and does not require a physical signature.', W/2, 291, {align:'center'});
+  doc.save('Lifeline_Invoice_' + order.id + '.pdf');
+}
+
+/* =============================================
+   MAIN APP
+   ============================================= */
+function App() {
+  const [page, setPage]     = useState('home');
+  const [user, setUser]     = useState(() => load('ll_user', null));
+  const [users, setUsers]   = useState(() => load('ll_users', [
+    {id:'C-001',name:'Raj Sharma',   email:'raj@example.com',  password:'raj123',  phone:'9876543210',address:'House 12, Sector 5, Delhi'},
+    {id:'C-002',name:'Priya Mehta',  email:'priya@example.com',password:'priya123',phone:'9812345678',address:'Flat 7B, Green Colony, Noida'},
+  ]));
+  const [orders, setOrders] = useState(() => load('ll_orders', [
+    {id:'ORD-001',cid:'C-001',cname:'Raj Sharma',phone:'9876543210',items:[{pid:'p3',name:'20L Refillable Jar',qty:2,price:50,deposit:100}],sub:100,dep:200,total:300,status:'delivered',screenshot:'uploaded',deliveryTime:'Delivered 16 Mar',address:'House 12, Sector 5, Delhi',date:'2024-03-16'},
+    {id:'ORD-002',cid:'C-002',cname:'Priya Mehta',phone:'9812345678',items:[{pid:'p1',name:'1L Bottle Carton',qty:3,price:80,deposit:0}],sub:240,dep:0,total:240,status:'screenshot',screenshot:'uploaded',deliveryTime:'',address:'Flat 7B, Green Colony, Noida',date:'2024-03-17'},
+  ]));
+  const [toast, setToast]   = useState('');
+  const oidRef  = useRef(load('ll_oid', 3));
+  const uidRef  = useRef(load('ll_uid', 3));
+
+  useEffect(() => { save('ll_user', user); }, [user]);
+  useEffect(() => { save('ll_users', users); }, [users]);
+  useEffect(() => { save('ll_orders', orders); }, [orders]);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(''), 3200); };
+
+  const login = (email, password) => {
+    if (email==='admin@lifeline.com' && password==='admin123') {
+      const a = {id:'ADMIN',name:'Admin',role:'admin'}; setUser(a); setPage('admin'); return true;
+    }
+    const u = users.find(x=>x.email===email && x.password===password);
+    if (u) { setUser(u); setPage('customer'); return true; }
+    return false;
+  };
+  const register = (data) => {
+    const id = 'C-' + String(uidRef.current).padStart(3,'0');
+    uidRef.current++; save('ll_uid', uidRef.current);
+    const nu = {...data, id, role:'customer'};
+    setUsers(p=>[...p,nu]); setUser(nu); setPage('customer');
+    showToast('Welcome, ' + data.name + '! Your Client ID: ' + id);
+  };
+  const placeOrder = (od) => {
+    const id = 'ORD-' + String(oidRef.current).padStart(3,'0');
+    oidRef.current++; save('ll_oid', oidRef.current);
+    const no = { id, cid:user.id, cname:user.name, phone:user.phone||'', ...od,
+      status:'pending', screenshot:null, deliveryTime:'',
+      date:new Date().toISOString().slice(0,10) };
+    setOrders(p=>[...p,no]); return id;
+  };
+  const updateOrder = (id, updates) => setOrders(p=>p.map(o=>o.id===id?{...o,...updates}:o));
+  const logout = () => { setUser(null); setPage('home'); showToast('Logged out successfully'); };
+  const myOrders = user ? orders.filter(o=>o.cid===user.id) : [];
+
+  return (
+    <>
+      {page==='home'     && <Home     setPage={setPage} user={user} logout={logout} showToast={showToast}/>}
+      {page==='auth'     && <Auth     login={login} register={register} setPage={setPage}/>}
+      {page==='customer' && user && user.role!=='admin' && <CustomerDash user={user} orders={myOrders} placeOrder={placeOrder} updateOrder={updateOrder} logout={logout} setPage={setPage} showToast={showToast}/>}
+      {page==='admin'    && user && user.role==='admin'  && <AdminDash   orders={orders} users={users} updateOrder={updateOrder} logout={logout} showToast={showToast}/>}
+      {toast && <div className="toast">✅ {toast}</div>}
+    </>
+  );
+}
+
+/* =============================================
+   NAVBAR
+   ============================================= */
+function Navbar({setPage, user, logout, dark=true}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <nav style={{background:dark?'var(--g800)':'rgba(26,61,26,0.97)',backdropFilter:'blur(8px)',padding:'0 28px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64,position:'sticky',top:0,zIndex:100,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={()=>setPage('home')}>
+        <span style={{fontSize:26}}>💧</span>
+        <div>
+          <div style={{fontFamily:'Playfair Display',fontSize:20,fontWeight:800,color:'#fff',lineHeight:1.1}}>Lifeline</div>
+          <div style={{fontSize:9,color:'#a8d8a8',letterSpacing:2.5,textTransform:'uppercase'}}>Packaged Drinking Water</div>
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        {user && user.role!=='admin' ? (
+          <>
+            <span style={{color:'#a8c8a8',fontSize:13}}>Hi, {user.name.split(' ')[0]}</span>
+            <button className="btn-primary" style={{background:'var(--lime)',color:'var(--g800)',fontWeight:700,fontSize:13,padding:'8px 18px'}} onClick={()=>setPage('customer')}>Dashboard</button>
+            <button className="btn-ghost" style={{color:'#c8e6c8',border:'1px solid rgba(255,255,255,0.15)',padding:'7px 14px',fontSize:13}} onClick={logout}>Logout</button>
+          </>
+        ) : user && user.role==='admin' ? (
+          <>
+            <span style={{background:'var(--lime)',color:'var(--g800)',fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:10}}>ADMIN</span>
+            <button className="btn-primary" style={{background:'var(--lime)',color:'var(--g800)',fontWeight:700,fontSize:13,padding:'8px 18px'}} onClick={()=>setPage('admin')}>Admin Panel</button>
+            <button className="btn-ghost" style={{color:'#c8e6c8',border:'1px solid rgba(255,255,255,0.15)',padding:'7px 14px',fontSize:13}} onClick={logout}>Logout</button>
+          </>
+        ) : (
+          <>
+            <button className="btn-ghost" style={{color:'#e0f0e0',border:'1px solid rgba(255,255,255,0.2)',fontSize:13}} onClick={()=>setPage('auth')}>Login</button>
+            <button className="btn-primary" style={{background:'var(--lime)',color:'var(--g800)',fontWeight:700,fontSize:13,padding:'8px 18px'}} onClick={()=>setPage('auth')}>Order Now →</button>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+/* =============================================
+   HOME PAGE
+   ============================================= */
+function Home({setPage, user, logout, showToast}) {
+  return (
+    <div style={{minHeight:'100vh',background:'#f4faf4'}}>
+      <Navbar setPage={setPage} user={user} logout={logout}/>
+
+      {/* HERO */}
+      <div style={{background:'linear-gradient(145deg,#0d2e0d 0%,#1a4d1a 45%,#2a7a2a 100%)',padding:'90px 24px 110px',position:'relative',overflow:'hidden',textAlign:'center'}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundImage:'radial-gradient(ellipse at 25% 55%,rgba(77,184,77,0.18) 0%,transparent 55%),radial-gradient(ellipse at 80% 15%,rgba(168,224,99,0.12) 0%,transparent 50%)'}}/>
+        <div style={{position:'relative',maxWidth:680,margin:'0 auto'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(77,184,77,0.18)',color:'#a8e063',padding:'6px 18px',borderRadius:20,fontSize:11,letterSpacing:2,textTransform:'uppercase',marginBottom:24,border:'1px solid rgba(168,224,99,0.25)'}}>
+            ISI & FSSAI Certified · Delhi NCR
+          </div>
+          <h1 style={{fontFamily:'Playfair Display',fontSize:56,fontWeight:800,color:'#fff',lineHeight:1.1,marginBottom:20}}>Pure water.<br/>Delivered to your door.</h1>
+          <p style={{color:'#b0d4b0',fontSize:17,lineHeight:1.8,marginBottom:40,maxWidth:520,margin:'0 auto 40px'}}>Lifeline Packaged Drinking Water — trusted by 500+ homes, offices, and events across Delhi NCR for over 6 years.</p>
+          <div className="hero-btns" style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}}>
+            <button style={{background:'var(--lime)',color:'var(--g800)',fontWeight:700,padding:'16px 40px',fontSize:17,borderRadius:10,border:'none',cursor:'pointer',boxShadow:'0 4px 20px rgba(168,224,99,0.35)',transition:'all .2s'}} onClick={()=>setPage('auth')} onMouseEnter={e=>e.target.style.transform='translateY(-2px)'} onMouseLeave={e=>e.target.style.transform='none'}>Start Ordering — Free →</button>
+            <button style={{background:'rgba(255,255,255,0.1)',color:'#fff',padding:'16px 32px',fontSize:15,borderRadius:10,border:'1px solid rgba(255,255,255,0.2)',cursor:'pointer',transition:'all .2s',backdropFilter:'blur(4px)'}} onClick={()=>document.getElementById('products').scrollIntoView({behavior:'smooth'})}>View Products ↓</button>
+          </div>
+        </div>
+        <div className="hero-wave"/>
+      </div>
+
+      {/* FEATURES */}
+      <div style={{maxWidth:960,margin:'-30px auto 0',padding:'0 20px'}}>
+        <div className="features-grid" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
+          {[
+            ['🏆','BIS & FSSAI Certified','Every batch rigorously tested. You drink only the purest.'],
+            ['🚚','Same-Day Delivery','Order before 12 PM and receive your water the same evening.'],
+            ['♻️','Eco-Friendly Packaging','100% recyclable bottles and reusable 20L jars.'],
+          ].map(([icon,title,desc])=>(
+            <div key={title} className="card" style={{textAlign:'center',padding:'28px 18px'}}>
+              <div style={{fontSize:34,marginBottom:10}}>{icon}</div>
+              <div style={{fontWeight:700,fontSize:15,color:'var(--g800)',marginBottom:7}}>{title}</div>
+              <div style={{color:'var(--muted)',fontSize:13,lineHeight:1.65}}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* PRODUCTS */}
+      <div id="products" style={{maxWidth:960,margin:'60px auto',padding:'0 20px'}}>
+        <div style={{textAlign:'center',marginBottom:36}}>
+          <h2 style={{fontFamily:'Playfair Display',fontSize:40,fontWeight:800,color:'var(--g800)',marginBottom:10}}>Our Products</h2>
+          <p style={{color:'var(--muted)',fontSize:16}}>Pure water in every size, for every need</p>
+        </div>
+        <div className="products-grid" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
+          {PRODUCTS.map(p=>(
+            <div key={p.id} className="card" style={{textAlign:'center',cursor:'pointer',transition:'transform .2s,box-shadow .2s',padding:'28px 20px'}} onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-6px)';e.currentTarget.style.boxShadow='0 10px 36px rgba(45,122,45,0.16)'}} onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='var(--shadow)'}}>
+              <div style={{fontSize:50,marginBottom:12}}>{p.img}</div>
+              <div style={{fontWeight:700,fontSize:16,color:'var(--g800)',marginBottom:5}}>{p.name}</div>
+              <div style={{background:'var(--g50)',display:'inline-block',padding:'3px 12px',borderRadius:20,fontSize:12,color:'var(--g700)',fontWeight:600,marginBottom:10}}>{p.detail}</div>
+              <p style={{color:'var(--muted)',fontSize:13,lineHeight:1.6,marginBottom:18}}>{p.desc}</p>
+              <div style={{borderTop:'1px solid var(--border)',paddingTop:14}}>
+                <span style={{fontSize:28,fontWeight:800,color:'var(--g600)'}}>₹{p.price}</span>
+                <span style={{fontSize:13,color:'var(--muted)',fontWeight:400}}> /{p.unit}</span>
+                {p.deposit>0 && <div style={{fontSize:12,color:'var(--warn)',marginTop:4,fontWeight:500}}>+ ₹{p.deposit} refundable deposit</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{textAlign:'center',marginTop:28}}>
+          <button className="btn-primary" style={{padding:'14px 36px',fontSize:16,borderRadius:10}} onClick={()=>setPage('auth')}>Order Now →</button>
+        </div>
+      </div>
+
+      {/* HOW IT WORKS + STATS */}
+      <div style={{background:'var(--g800)',padding:'64px 28px',marginTop:20}}>
+        <div style={{maxWidth:960,margin:'0 auto'}}>
+          <div className="howit-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:56,alignItems:'center'}}>
+            <div>
+              <h2 style={{fontFamily:'Playfair Display',fontSize:36,fontWeight:800,color:'#fff',marginBottom:28}}>How it works</h2>
+              {[
+                ['1','Browse our products — no account needed'],
+                ['2','Create your free account in 30 seconds'],
+                ['3','Choose products and place your order'],
+                ['4','Pay via UPI and upload your screenshot'],
+                ['5','Admin verifies & confirms with delivery time'],
+                ['6','Real-time delivery tracking until it arrives'],
+              ].map(([n,t])=>(
+                <div key={n} style={{display:'flex',gap:14,alignItems:'flex-start',marginBottom:16}}>
+                  <div style={{minWidth:28,height:28,borderRadius:'50%',background:'var(--lime)',color:'var(--g800)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:13,flexShrink:0}}>{n}</div>
+                  <p style={{color:'#c0d8c0',fontSize:14,lineHeight:1.65,paddingTop:5}}>{t}</p>
+                </div>
+              ))}
+              <button style={{marginTop:14,background:'var(--lime)',color:'var(--g800)',fontWeight:700,padding:'13px 30px',borderRadius:8,border:'none',cursor:'pointer',fontSize:15,transition:'all .2s'}} onClick={()=>setPage('auth')} onMouseEnter={e=>e.target.style.opacity='.88'} onMouseLeave={e=>e.target.style.opacity='1'}>Get Started Free →</button>
+            </div>
+            <div>
+              <div className="stats-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24}}>
+                {[['500+','Active Clients'],['50,000+','Bottles Delivered'],['4.9 ★','Avg. Rating'],['6 Years','In Business']].map(([v,l])=>(
+                  <div key={l} style={{background:'rgba(255,255,255,0.06)',borderRadius:12,padding:'20px 16px',textAlign:'center',border:'1px solid rgba(255,255,255,0.08)'}}>
+                    <div style={{fontFamily:'Playfair Display',fontSize:28,fontWeight:800,color:'var(--lime)'}}>{v}</div>
+                    <div style={{fontSize:12,color:'#8ab88a',marginTop:5}}>{l}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:'rgba(168,224,99,0.1)',borderRadius:12,padding:'18px 20px',border:'1px solid rgba(168,224,99,0.2)'}}>
+                <div style={{fontSize:13,color:'#c8e8c8',lineHeight:1.7}}>
+                  <b style={{color:'var(--lime)'}}>🌿 Our Commitment:</b> Every bottle and jar goes through a 7-stage purification process including RO, UV, and ozonation before it reaches your home.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTACT / FOOTER */}
+      <div style={{background:'#e8f5e8',padding:'20px 32px',textAlign:'center'}}>
+        <p style={{color:'var(--muted)',fontSize:13}}>© 2024 Lifeline Packaged Drinking Water · FSSAI Lic. 12315004000753 · <b>+91 98765 43210</b> · lifeline.water@gmail.com · Delhi NCR</p>
+        <p style={{color:'var(--muted)',fontSize:12,marginTop:4}}>
+          <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>setPage('auth')}>Admin Login</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* =============================================
+   AUTH PAGE
+   ============================================= */
+function Auth({login, register, setPage}) {
+  const [mode, setMode]     = useState('login');
+  const [form, setForm]     = useState({name:'',email:'',password:'',phone:'',address:''});
+  const [err, setErr]       = useState('');
+  const [loading, setLoading] = useState(false);
+  const set = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  const handle = async () => {
+    setErr(''); setLoading(true);
+    await new Promise(r=>setTimeout(r,400));
+    if (mode==='register') {
+      if (!form.name||!form.email||!form.password||!form.phone) {
+        setErr('Please fill in all required fields.'); setLoading(false); return;
+      }
+      if (form.phone.length !== 10 || !/^\d+$/.test(form.phone)) {
+        setErr('Enter a valid 10-digit mobile number.'); setLoading(false); return;
+      }
+      register(form);
+    } else {
+      if (!login(form.email, form.password)) {
+        setErr('Invalid email or password. Try: raj@example.com / raj123');
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:'linear-gradient(145deg,#0d2e0d,#235c23)',display:'flex',flexDirection:'column'}}>
+      <nav style={{padding:'0 28px',height:62,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:9,cursor:'pointer'}} onClick={()=>setPage('home')}>
+          <span style={{fontSize:22}}>💧</span>
+          <span style={{fontFamily:'Playfair Display',fontSize:19,fontWeight:800,color:'#fff'}}>Lifeline</span>
+        </div>
+        <span style={{color:'#a8d8a8',fontSize:13,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setPage('home')}>← Back to Home</span>
+      </nav>
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
+        <div className="card" style={{width:'100%',maxWidth:420,padding:38}}>
+          <div style={{textAlign:'center',marginBottom:26}}>
+            <div style={{fontSize:36,marginBottom:8}}>💧</div>
+            <h2 style={{fontFamily:'Playfair Display',fontSize:28,fontWeight:800,color:'var(--g800)'}}>{mode==='register'?'Create Account':'Welcome Back'}</h2>
+            <p style={{color:'var(--muted)',fontSize:13,marginTop:5}}>{mode==='register'?'Free account — start ordering in minutes':'Sign in to track and manage your orders'}</p>
+          </div>
+
+          {mode==='register' && (
+            <div className="fg"><label>Full Name *</label>
+              <input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Your full name"/>
+            </div>
+          )}
+          <div className="fg"><label>Email Address *</label>
+            <input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="you@email.com"/>
+          </div>
+          <div className="fg"><label>Password *</label>
+            <input type="password" value={form.password} onChange={e=>set('password',e.target.value)} placeholder={mode==='register'?'Choose a strong password':'Your password'}/>
+          </div>
+          {mode==='register' && (
+            <>
+              <div className="fg"><label>Mobile Number *</label>
+                <input value={form.phone} onChange={e=>set('phone',e.target.value)} placeholder="10-digit mobile number" maxLength={10}/>
+              </div>
+              <div className="fg"><label>Delivery Address</label>
+                <textarea value={form.address} onChange={e=>set('address',e.target.value)} style={{resize:'none',height:72}} placeholder="House/flat no., street, area, city"/>
+              </div>
+            </>
+          )}
+          {mode==='login' && (
+            <div style={{background:'var(--g50)',borderRadius:8,padding:'9px 12px',fontSize:12,color:'var(--muted)',marginBottom:14}}>
+              Demo account: <b>raj@example.com</b> / <b>raj123</b>
+            </div>
+          )}
+          {err && <div style={{background:'#fee2e2',color:'var(--danger)',padding:'10px 13px',borderRadius:7,fontSize:13,marginBottom:14,border:'1px solid #fca5a5'}}>{err}</div>}
+
+          <button className="btn-primary" style={{width:'100%',padding:14,fontSize:15,borderRadius:9}} onClick={handle} disabled={loading}>
+            {loading ? 'Please wait…' : mode==='register' ? 'Create My Account' : 'Sign In'}
+          </button>
+          <div style={{textAlign:'center',marginTop:18,fontSize:13,color:'var(--muted)'}}>
+            {mode==='register'
+              ? <>Already have an account? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>setMode('login')}>Sign In</span></>
+              : <>New to Lifeline? <span style={{color:'var(--g600)',cursor:'pointer',fontWeight:600}} onClick={()=>setMode('register')}>Create Free Account</span></>
+            }
+          </div>
+          <div style={{textAlign:'center',marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+            <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setMode('login');}}>
+              Staff / Admin Login →
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =============================================
+   CUSTOMER DASHBOARD
+   ============================================= */
+function CustomerDash({user, orders, placeOrder, updateOrder, logout, setPage, showToast}) {
+  const [tab, setTab]       = useState('order');
+  const [cart, setCart]     = useState({p1:0,p2:0,p3:0});
+  const [addr, setAddr]     = useState(user.address||'');
+  const [step, setStep]     = useState(0);
+  const [lastOid, setLastOid] = useState(null);
+  const fileRefs            = useRef({});
+
+  const cartItems = PRODUCTS.map(p=>({...p,qty:cart[p.id]||0})).filter(p=>p.qty>0);
+  const sub       = cartItems.reduce((a,c)=>a+c.price*c.qty,0);
+  const dep       = cartItems.reduce((a,c)=>a+(c.deposit||0)*c.qty,0);
+  const total     = sub+dep;
+
+  const adjustCart = (pid,delta) => setCart(p=>({...p,[pid]:Math.max(0,(p[pid]||0)+delta)}));
+
+  const handlePlaceOrder = () => {
+    const items = cartItems.map(c=>({pid:c.id,name:c.name,qty:c.qty,price:c.price,deposit:c.deposit||0}));
+    const id = placeOrder({items,sub,dep,total,address:addr});
+    setLastOid(id); setCart({p1:0,p2:0,p3:0}); setStep(0); setTab('track');
+    showToast('Order ' + id + ' placed! Please upload payment screenshot.');
+  };
+
+  const handleFileUpload = (oid, file) => {
+    if (!file) return;
+    // In production you'd upload to storage. Here we store filename as proof.
+    updateOrder(oid, {screenshot: file.name, status:'screenshot'});
+    showToast('Screenshot uploaded for ' + oid);
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:'#f4faf4'}}>
+      <Navbar setPage={setPage} user={user} logout={logout}/>
+
+      <div style={{maxWidth:840,margin:'30px auto',padding:'0 16px'}}>
+        {/* Stats */}
+        <div className="dash-stats" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:24}}>
+          {[
+            ['Total Orders', orders.length, 'var(--g600)'],
+            ['Active', orders.filter(o=>!['delivered','cancelled'].includes(o.status)).length, '#d97706'],
+            ['Delivered', orders.filter(o=>o.status==='delivered').length, '#14532d'],
+          ].map(([l,v,c])=>(
+            <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid var(--border)',padding:'16px',textAlign:'center',boxShadow:'0 1px 8px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize:26,fontWeight:800,color:c}}>{v}</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginTop:3}}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:'flex',gap:8,marginBottom:22,flexWrap:'wrap'}}>
+          {[['order','🛒 Place Order'],['track','📦 My Orders'],['profile','👤 My Profile']].map(([k,l])=>(
+            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
+          ))}
+        </div>
+
+        {/* PLACE ORDER */}
+        {tab==='order' && (
+          <div>
+            {step===0 && (
+              <div className="card">
+                <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:20}}>Select Products</h3>
+                {PRODUCTS.map(p=>(
+                  <div key={p.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 0',borderBottom:'1px solid var(--border)',flexWrap:'wrap',gap:10}}>
+                    <div style={{display:'flex',gap:14,alignItems:'center',flex:1}}>
+                      <span style={{fontSize:36}}>{p.img}</span>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:15,color:'var(--g800)'}}>{p.name}</div>
+                        <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{p.detail}</div>
+                        <div style={{marginTop:4}}>
+                          <span style={{fontSize:14,fontWeight:700,color:'var(--g600)'}}>₹{p.price}</span>
+                          <span style={{fontSize:12,color:'var(--muted)'}}> /{p.unit}</span>
+                          {p.deposit>0 && <span style={{fontSize:11,color:'var(--warn)',marginLeft:6}}>+₹{p.deposit} deposit</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <button style={{width:34,height:34,borderRadius:7,background:'var(--g50)',border:'1.5px solid var(--border)',cursor:'pointer',fontSize:18,color:'var(--g700)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}} onClick={()=>adjustCart(p.id,-1)}>−</button>
+                      <span style={{minWidth:28,textAlign:'center',fontWeight:700,fontSize:16,color:'var(--g800)'}}>{cart[p.id]||0}</span>
+                      <button style={{width:34,height:34,borderRadius:7,background:'var(--g600)',border:'none',cursor:'pointer',fontSize:18,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}} onClick={()=>adjustCart(p.id,1)}>+</button>
+                    </div>
+                  </div>
+                ))}
+                <div className="fg" style={{marginTop:18}}>
+                  <label>Delivery Address *</label>
+                  <textarea value={addr} onChange={e=>setAddr(e.target.value)} style={{resize:'none',height:76}} placeholder="Full delivery address with landmark"/>
+                </div>
+                {dep>0 && (
+                  <div style={{background:'#fef3c7',borderRadius:8,padding:'10px 14px',marginBottom:14,fontSize:13,color:'#92400e',border:'1px solid #fde68a'}}>
+                    ℹ️ Includes <b>₹{dep}</b> refundable security deposit for {cartItems.find(c=>c.deposit>0)?.qty} jar(s). Returned when empty jar is handed back.
+                  </div>
+                )}
+                <div style={{background:'var(--g50)',borderRadius:9,padding:'14px 18px',marginBottom:18,display:'flex',justifyContent:'space-between',alignItems:'center',border:'1px solid var(--border)'}}>
+                  <div>
+                    <div style={{fontSize:13,color:'var(--muted)'}}>Water: ₹{sub}{dep>0?` + Deposit: ₹${dep}`:''}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>Order Total</div>
+                  </div>
+                  <span style={{fontSize:26,fontWeight:800,color:'var(--g700)'}}>₹{total}</span>
+                </div>
+                <button className="btn-primary" style={{width:'100%',padding:14,fontSize:16,borderRadius:9}} disabled={!cartItems.length||!addr.trim()} onClick={()=>setStep(1)}>
+                  {!cartItems.length ? 'Add products to continue' : 'Review Order →'}
+                </button>
+              </div>
+            )}
+
+            {step===1 && (
+              <div className="card">
+                <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:18}}>Review Your Order</h3>
+                <div style={{marginBottom:16}}>
+                  {cartItems.map(c=>(
+                    <div key={c.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid var(--border)'}}>
+                      <div>
+                        <div style={{fontSize:14,fontWeight:600,color:'var(--g800)'}}>{c.name} × {c.qty}</div>
+                        <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>{c.detail}</div>
+                      </div>
+                      <div style={{textAlign:'right'}}>
+                        <div style={{fontWeight:700,color:'var(--g600)'}}>₹{(c.price+(c.deposit||0))*c.qty}</div>
+                        {c.deposit>0&&<div style={{fontSize:11,color:'var(--warn)'}}>incl. ₹{c.deposit*c.qty} deposit</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',fontWeight:800,fontSize:18,color:'var(--g700)',padding:'10px 0',borderTop:'2px solid var(--border)',marginBottom:14}}>
+                  <span>Total</span><span>₹{total}</span>
+                </div>
+                <div style={{background:'var(--g50)',borderRadius:8,padding:'10px 14px',fontSize:13,color:'var(--g800)',marginBottom:20,border:'1px solid var(--border)'}}>
+                  📍 {addr}
+                </div>
+                <div style={{display:'flex',gap:10}}>
+                  <button className="btn-ghost" style={{flex:1}} onClick={()=>setStep(0)}>← Edit</button>
+                  <button className="btn-primary" style={{flex:2,padding:13,fontSize:15}} onClick={()=>setStep(2)}>Proceed to Payment →</button>
+                </div>
+              </div>
+            )}
+
+            {step===2 && (
+              <div className="card" style={{textAlign:'center'}}>
+                <h3 style={{fontWeight:700,fontSize:17,color:'var(--g800)',marginBottom:6}}>Complete Payment via UPI</h3>
+                <p style={{color:'var(--muted)',fontSize:13,marginBottom:22}}>Scan the QR code below or use the UPI ID to pay ₹{total}</p>
+                <div style={{display:'inline-block',background:'#f0fff0',border:'2px solid var(--border)',borderRadius:14,padding:16,marginBottom:16}}>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=1a3d1a&data=upi://pay?pa=lifeline.water@paytm%26pn=Lifeline%20Water%26am=${total}%26tn=Order%20Payment%26cu=INR`}
+                    alt="UPI Payment QR Code"
+                    width={200} height={200}
+                    style={{display:'block',borderRadius:8}}
+                  />
+                </div>
+                <div style={{background:'var(--g50)',borderRadius:9,padding:'12px 18px',fontSize:13,color:'var(--g800)',marginBottom:8,display:'inline-block',minWidth:240,textAlign:'left',border:'1px solid var(--border)'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}><span style={{color:'var(--muted)'}}>UPI ID</span><b>lifeline.water@paytm</b></div>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}><span style={{color:'var(--muted)'}}>Name</span><b>Lifeline Water</b></div>
+                  <div style={{display:'flex',justifyContent:'space-between'}}><span style={{color:'var(--muted)'}}>Amount</span><b style={{color:'var(--g600)'}}>₹{total}</b></div>
+                </div>
+                <p style={{color:'var(--muted)',fontSize:13,margin:'16px auto',maxWidth:340,lineHeight:1.6}}>
+                  After paying, click the button below. You'll be asked to upload your payment screenshot on the next screen to confirm your order.
+                </p>
+                <div style={{display:'flex',gap:10,maxWidth:380,margin:'0 auto'}}>
+                  <button className="btn-ghost" style={{flex:1}} onClick={()=>setStep(1)}>← Back</button>
+                  <button className="btn-primary" style={{flex:2,padding:14,fontSize:15}} onClick={handlePlaceOrder}>I've Paid — Place Order ✓</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TRACK ORDERS */}
+        {tab==='track' && (
+          <div>
+            {lastOid && (
+              <div style={{background:'#d1fae5',border:'1px solid #6ee7b7',borderRadius:9,padding:'12px 16px',marginBottom:18,fontSize:14,color:'#065f46',fontWeight:500}}>
+                ✅ Order {lastOid} placed! Upload your payment screenshot below to confirm.
+              </div>
+            )}
+            {orders.length===0 ? (
+              <div className="card" style={{textAlign:'center',padding:'52px 24px',color:'var(--muted)'}}>
+                <div style={{fontSize:40,marginBottom:12}}>📦</div>
+                <p style={{fontWeight:600,fontSize:16,marginBottom:6}}>No orders yet</p>
+                <p style={{fontSize:14}}>Place your first order to get started!</p>
+                <button className="btn-primary" style={{marginTop:18,padding:'10px 28px'}} onClick={()=>setTab('order')}>Order Now →</button>
+              </div>
+            ) : orders.slice().reverse().map(o=>{
+              const si = STATUS_ORDER.indexOf(o.status);
+              return (
+                <div key={o.id} className="card" style={{marginBottom:18}}>
+                  {/* Header */}
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:8,marginBottom:16}}>
+                    <div>
+                      <span style={{fontWeight:800,fontSize:16,color:'var(--g800)'}}>{o.id}</span>
+                      <span style={{fontSize:12,color:'var(--muted)',marginLeft:8}}>{o.date}</span>
+                      {o.deliveryTime && <div style={{fontSize:13,color:'#5b21b6',marginTop:4,fontWeight:500}}>🚚 {o.deliveryTime}</div>}
+                    </div>
+                    <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                      <span style={{fontSize:18,fontWeight:800,color:'var(--g600)'}}>₹{o.total}</span>
+                      {o.status==='delivered' && (
+                        <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'5px 12px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice PDF</button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="progress-bar">
+                    {STATUS_ORDER.map((s,i)=>(
+                      <React.Fragment key={s}>
+                        <div className="progress-step">
+                          <div className={`progress-dot ${i<si?'done':i===si?'active':'future'}`}>
+                            {i<si ? '✓' : i+1}
+                          </div>
+                          <div className="progress-label" style={{color:i<=si?'var(--g700)':'#9ca3af',fontWeight:i===si?700:400}}>
+                            {STATUS_LABELS[s]}
+                          </div>
+                        </div>
+                        {i<STATUS_ORDER.length-1 && <div className={`progress-line ${i<si?'done':'future'}`}/>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {/* Items */}
+                  <div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginBottom:12}}>
+                    {o.items.map((it,i)=>(
+                      <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'var(--muted)',padding:'3px 0'}}>
+                        <span>{it.name} × {it.qty}{it.deposit>0?` (₹${it.deposit*it.qty} deposit)`:''}</span>
+                        <span style={{fontWeight:600,color:'var(--text)'}}>₹{(it.price+(it.deposit||0))*it.qty}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Actions */}
+                  {o.status==='pending' && !o.screenshot && (
+                    <div style={{background:'#fef3c7',borderRadius:9,padding:'13px 16px',border:'1px solid #fde68a'}}>
+                      <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>
+                        📎 Upload your UPI payment screenshot to confirm this order
+                      </div>
+                      <input
+                        type="file" accept="image/*"
+                        ref={el => fileRefs.current[o.id] = el}
+                        style={{display:'none'}}
+                        onChange={e=>handleFileUpload(o.id,e.target.files[0])}
+                      />
+                      <button className="btn-primary" style={{fontSize:13,padding:'9px 20px'}} onClick={()=>fileRefs.current[o.id]?.click()}>
+                        📸 Upload Screenshot
+                      </button>
+                    </div>
+                  )}
+                  {o.status==='screenshot' && (
+                    <div style={{background:'#dbeafe',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#1e40af',border:'1px solid #bfdbfe'}}>
+                      📸 Payment screenshot received — awaiting admin verification (usually within 1 hour).
+                    </div>
+                  )}
+                  {o.status==='verified' && (
+                    <div style={{background:'#d1fae5',borderRadius:8,padding:'10px 14px',fontSize:13,color:'#065f46',border:'1px solid #6ee7b7'}}>
+                      ✅ Payment verified! Your order has been confirmed.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* PROFILE */}
+        {tab==='profile' && (
+          <div className="card">
+            <h3 style={{fontWeight:700,fontSize:17,marginBottom:22,color:'var(--g800)'}}>My Profile</h3>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:20}}>
+              {[['Client ID',user.id],['Name',user.name],['Email',user.email],['Phone',user.phone||'Not set'],['Delivery Address',user.address||'Not set']].map(([l,v])=>(
+                <div key={l} style={{background:'var(--g50)',borderRadius:9,padding:'13px 15px',border:'1px solid var(--border)',gridColumn:l==='Delivery Address'?'1/-1':'auto'}}>
+                  <div style={{fontSize:10,color:'var(--muted)',textTransform:'uppercase',letterSpacing:1,marginBottom:5,fontWeight:700}}>{l}</div>
+                  <div style={{fontWeight:600,fontSize:14,color:'var(--g800)',wordBreak:'break-all'}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            <button className="btn-danger" onClick={logout}>Logout</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =============================================
+   ADMIN DASHBOARD
+   ============================================= */
+function AdminDash({orders, users, updateOrder, logout, showToast}) {
+  const [tab,       setTab]       = useState('orders');
+  const [filter,    setFilter]    = useState('all');
+  const [delivInp,  setDelivInp]  = useState({});
+  const needsVerify = orders.filter(o=>o.status==='screenshot');
+
+  const filtered = filter==='all' ? orders : orders.filter(o=>o.status===filter);
+  const sBadge = {pending:'b-pending',screenshot:'b-screenshot',verified:'b-verified',confirmed:'b-confirmed',out_for_delivery:'b-out',delivered:'b-delivered',cancelled:'b-cancelled'};
+
+  const confirmOrder = (id) => {
+    const time = delivInp[id] || 'Delivery time to be confirmed';
+    updateOrder(id, {status:'confirmed', deliveryTime: time});
+    setDelivInp(p=>({...p,[id]:''}));
+    showToast('Order ' + id + ' confirmed with delivery: ' + time);
+  };
+
+  return (
+    <div style={{minHeight:'100vh',background:'#f4faf4'}}>
+      {/* Admin Nav */}
+      <nav style={{background:'var(--g800)',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64,position:'sticky',top:0,zIndex:100,borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:22}}>💧</span>
+          <div>
+            <div style={{fontFamily:'Playfair Display',fontSize:19,fontWeight:800,color:'#fff',lineHeight:1.1}}>Lifeline</div>
+            <div style={{fontSize:9,color:'#a8d8a8',letterSpacing:2}}>ADMIN PANEL</div>
+          </div>
+          <span style={{background:'var(--lime)',color:'var(--g800)',fontSize:10,fontWeight:800,padding:'3px 10px',borderRadius:10,marginLeft:6}}>STAFF</span>
+        </div>
+        <button style={{background:'rgba(255,255,255,0.08)',color:'#c8e6c8',padding:'7px 16px',border:'1px solid rgba(255,255,255,0.15)',borderRadius:7,cursor:'pointer',fontSize:13,fontFamily:'Inter'}} onClick={logout}>Logout</button>
+      </nav>
+
+      <div style={{maxWidth:1000,margin:'28px auto',padding:'0 16px'}}>
+        {/* Alert Banner */}
+        {needsVerify.length>0 && (
+          <div style={{background:'#fef3c7',border:'1px solid #fcd34d',borderRadius:9,padding:'13px 18px',marginBottom:22,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10}}>
+            <span style={{fontWeight:700,color:'#92400e',fontSize:14}}>⚡ {needsVerify.length} order(s) awaiting payment verification</span>
+            <button style={{background:'#f59e0b',color:'#78350f',padding:'7px 16px',borderRadius:7,border:'none',cursor:'pointer',fontSize:13,fontWeight:700,fontFamily:'Inter'}} onClick={()=>{setFilter('screenshot');setTab('orders');}}>Review Now →</button>
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="admin-stats" style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12,marginBottom:26}}>
+          {[
+            ['All Orders',  orders.length,                                                      'var(--g600)'],
+            ['Unpaid',      orders.filter(o=>o.status==='pending').length,                      '#d97706'],
+            ['Verify',      needsVerify.length,                                                  '#7c3aed'],
+            ['Confirmed',   orders.filter(o=>['confirmed','out_for_delivery'].includes(o.status)).length, '#065f46'],
+            ['Delivered',   orders.filter(o=>o.status==='delivered').length,                    '#14532d'],
+          ].map(([l,v,c])=>(
+            <div key={l} style={{background:'#fff',borderRadius:10,border:'1px solid var(--border)',padding:'14px 10px',textAlign:'center',boxShadow:'0 1px 6px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize:24,fontWeight:800,color:c}}>{v}</div>
+              <div style={{fontSize:11,color:'var(--muted)',marginTop:3}}>{l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div style={{display:'flex',gap:8,marginBottom:22}}>
+          {[['orders','📋 Orders'],['clients','👥 Clients']].map(([k,l])=>(
+            <button key={k} className={`tab-btn ${tab===k?'active':'inactive'}`} onClick={()=>setTab(k)}>{l}</button>
+          ))}
+        </div>
+
+        {/* ORDERS TAB */}
+        {tab==='orders' && (
+          <div>
+            <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
+              {[['all','All'],['screenshot','Needs Verify'],['confirmed','Confirmed'],['out_for_delivery','Out for Delivery'],['delivered','Delivered'],['cancelled','Cancelled']].map(([k,l])=>(
+                <button key={k} onClick={()=>setFilter(k)} style={{padding:'6px 14px',borderRadius:20,border:'1px solid '+(filter===k?'var(--g500)':'var(--border)'),background:filter===k?'var(--g50)':'#fff',color:filter===k?'var(--g700)':'var(--muted)',fontSize:12,cursor:'pointer',fontWeight:filter===k?700:400,fontFamily:'Inter',transition:'all .15s'}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {filtered.length===0 ? (
+              <div className="card" style={{textAlign:'center',padding:'40px 24px',color:'var(--muted)'}}>No orders in this category.</div>
+            ) : filtered.slice().reverse().map(o=>(
+              <div key={o.id} className="card" style={{marginBottom:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:10,marginBottom:12}}>
+                  <div>
+                    <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                      <span style={{fontWeight:800,fontSize:15,color:'var(--g800)'}}>{o.id}</span>
+                      <span style={{fontSize:12,color:'var(--muted)'}}>{o.cid}</span>
+                      <span className={`badge ${sBadge[o.status]||'b-pending'}`}>{STATUS_LABELS[o.status]||o.status}</span>
+                    </div>
+                    <div style={{fontWeight:600,fontSize:13,color:'var(--text)',marginTop:4}}>{o.cname} · {o.phone}</div>
+                    <div style={{fontSize:12,color:'var(--muted)',marginTop:2}}>📍 {o.address||'No address'}</div>
+                    <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>Date: {o.date}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontSize:20,fontWeight:800,color:'var(--g600)'}}>₹{o.total}</div>
+                    {o.screenshot && <div style={{fontSize:11,color:'#1e40af',marginTop:3}}>📸 Screenshot: {o.screenshot}</div>}
+                  </div>
+                </div>
+
+                <div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginBottom:12}}>
+                  {o.items.map((it,i)=>(
+                    <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'var(--muted)',padding:'3px 0'}}>
+                      <span>{it.name} × {it.qty}{it.deposit>0?` (+₹${it.deposit*it.qty} deposit)`:''}</span>
+                      <span style={{fontWeight:600,color:'var(--text)'}}>₹{(it.price+(it.deposit||0))*it.qty}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {o.deliveryTime && (
+                  <div style={{background:'#e9d5ff',borderRadius:7,padding:'8px 12px',fontSize:13,color:'#5b21b6',marginBottom:12,fontWeight:500}}>🚚 {o.deliveryTime}</div>
+                )}
+
+                {/* Verify Payment */}
+                {o.status==='screenshot' && (
+                  <div style={{background:'#fef3c7',borderRadius:9,padding:'14px 16px',border:'1px solid #fde68a'}}>
+                    <div style={{fontSize:13,fontWeight:700,color:'#92400e',marginBottom:10}}>💸 Payment screenshot received — verify and set delivery time</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                      <input
+                        value={delivInp[o.id]||''}
+                        onChange={e=>setDelivInp(p=>({...p,[o.id]:e.target.value}))}
+                        placeholder="e.g. Tomorrow 10–11 AM, Today 5 PM"
+                        style={{flex:1,minWidth:200,fontSize:13,padding:'9px 13px'}}
+                      />
+                      <button className="btn-success" onClick={()=>confirmOrder(o.id)}>✓ Verify & Confirm</button>
+                      <button className="btn-danger" onClick={()=>{updateOrder(o.id,{status:'cancelled'});showToast('Order '+o.id+' rejected');}}>✕ Reject</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions by status */}
+                {o.status==='confirmed' && (
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <button className="btn-success" onClick={()=>{updateOrder(o.id,{status:'out_for_delivery'});showToast(o.id+' marked as Out for Delivery');}}>🚚 Mark Out for Delivery</button>
+                    <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Download Invoice</button>
+                  </div>
+                )}
+                {o.status==='out_for_delivery' && (
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <button className="btn-success" onClick={()=>{updateOrder(o.id,{status:'delivered'});showToast(o.id+' marked as Delivered!');}}>✓ Mark as Delivered</button>
+                    <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Invoice</button>
+                  </div>
+                )}
+                {o.status==='delivered' && (
+                  <button style={{background:'var(--g50)',color:'var(--g700)',border:'1.5px solid var(--border)',borderRadius:7,padding:'7px 14px',fontSize:12,fontWeight:600,cursor:'pointer'}} onClick={()=>generateInvoice(o)}>⬇ Download Invoice PDF</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* CLIENTS TAB */}
+        {tab==='clients' && (
+          <div>
+            <div style={{marginBottom:14,color:'var(--muted)',fontSize:13}}>{users.length} registered clients</div>
+            {users.map(u=>(
+              <div key={u.id} className="card" style={{marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:14}}>
+                  <div style={{width:44,height:44,borderRadius:'50%',background:'var(--g100)',border:'2px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'var(--g700)',fontSize:14,flexShrink:0}}>
+                    {u.name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:15,color:'var(--g800)'}}>{u.name}</div>
+                    <div style={{fontSize:13,color:'var(--muted)',marginTop:2}}>{u.email} · {u.phone||'No phone'}</div>
+                    <div style={{fontSize:12,color:'var(--muted)',marginTop:1}}>{u.address||'No address on file'}</div>
+                  </div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:10,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.5,marginBottom:2}}>Client ID</div>
+                  <div style={{fontWeight:800,fontSize:17,color:'var(--g600)'}}>{u.id}</div>
+                  <div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>{orders.filter(o=>o.cid===u.id).length} total orders · ₹{orders.filter(o=>o.cid===u.id).reduce((a,o)=>a+o.total,0)} spent</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>
