@@ -673,7 +673,7 @@ function Auth({login, register, setPage}) {
                 </span>
               </div>
               <div style={{textAlign:'center',marginTop:10}}>
-                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setShowForm(true);}}>
+                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'',password:''}));setShowForm(true);}}>
                   Staff / Admin Login →
                 </span>
               </div>
@@ -715,11 +715,7 @@ function Auth({login, register, setPage}) {
                   </div>
                 </>
               )}
-              {mode==='login' && !showForm && (
-                <div style={{background:'var(--g50)',borderRadius:8,padding:'9px 12px',fontSize:12,color:'var(--muted)',marginBottom:14}}>
-                  Demo account: <b>raj@example.com</b> / <b>raj123</b>
-                </div>
-              )}
+
               {err && <div style={{background:'#fee2e2',color:'var(--danger)',padding:'10px 13px',borderRadius:7,fontSize:13,marginBottom:14,border:'1px solid #fca5a5'}}>{err}</div>}
 
               <button className="btn-primary" style={{width:'100%',padding:14,fontSize:15,borderRadius:9}} onClick={handle} disabled={loading}>
@@ -732,7 +728,7 @@ function Auth({login, register, setPage}) {
                 }
               </div>
               <div style={{textAlign:'center',marginTop:10,paddingTop:10,borderTop:'1px solid var(--border)'}}>
-                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'admin@lifeline.com',password:'admin123'}));setMode('login');}}>
+                <span style={{color:'var(--muted)',fontSize:12,cursor:'pointer'}} onClick={()=>{setForm(p=>({...p,email:'',password:''}));setMode('login');}}>
                   Staff / Admin Login →
                 </span>
               </div>
